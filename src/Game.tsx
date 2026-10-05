@@ -48,7 +48,8 @@ type ObstacleKind =
   | "plane"
   | "boxes" // jump: tall stack of PAX merch boxes
   | "banner" // slide: hanging PAX banner
-  | "drone"; // slide: camera drone at head height
+  | "drone" // slide: camera drone at head height
+  | "truck"; // jump: a little Keychron delivery truck
 
 // Spawn weights; `from` is the distance (m) where the obstacle starts appearing.
 const OBSTACLE_TABLE: { kind: ObstacleKind; weight: number; from: number }[] = [
@@ -60,6 +61,7 @@ const OBSTACLE_TABLE: { kind: ObstacleKind; weight: number; from: number }[] = [
   { kind: "banner", weight: 11, from: 0 },
   { kind: "boxes", weight: 11, from: 0 },
   { kind: "drone", weight: 10, from: 0 },
+  { kind: "truck", weight: 11, from: 0 },
 ];
 
 type Player = {
@@ -1389,73 +1391,301 @@ function drawObstacle(ctx: CanvasRenderingContext2D, obstacle: Obstacle) {
   }
 
   if (obstacle.kind === "plane") {
-    const propellerX = x + 10;
-    const propellerY = y + height / 2;
+    // Chubby toy plane flying towards the rider (nose on the left), with a
+    // face on the nose and a little cat pilot in the cockpit.
+    const t = performance.now() / 1000;
+    const bob = Math.sin(t * 3 + obstacle.id) * 2;
+    const cx = x + width * 0.55;
+    const cy = y + height * 0.52 + bob;
+    const outline = "#1b1d22";
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
 
-    ctx.fillStyle = "rgba(0,0,0,.13)";
+    ctx.fillStyle = "rgba(0,0,0,.12)";
     ctx.beginPath();
-    ctx.ellipse(x + width / 2, y + height + 17, width * 0.38, 7, 0, 0, Math.PI * 2);
+    ctx.ellipse(x + width / 2, y + height + 17, width * 0.34, 6, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = "#f7f2df";
+    // Tail fin + tail wing
+    ctx.fillStyle = "#ff8fa3";
     ctx.beginPath();
-    ctx.moveTo(x + 18, y + height * 0.48);
-    ctx.quadraticCurveTo(x + 42, y + 4, x + width - 32, y + 15);
-    ctx.quadraticCurveTo(x + width + 4, y + height * 0.48, x + width - 29, y + height - 13);
-    ctx.quadraticCurveTo(x + 50, y + height + 2, x + 18, y + height * 0.48);
+    ctx.moveTo(x + width - 30, cy - 6);
+    ctx.quadraticCurveTo(x + width - 22, cy - 34, x + width - 6, cy - 30);
+    ctx.quadraticCurveTo(x + width - 4, cy - 12, x + width - 12, cy + 2);
     ctx.closePath();
     ctx.fill();
-
-    ctx.fillStyle = "#006491";
-    ctx.beginPath();
-    ctx.moveTo(x + 67, y + height * 0.43);
-    ctx.lineTo(x + 103, y - 15);
-    ctx.lineTo(x + 119, y - 12);
-    ctx.lineTo(x + 101, y + height * 0.48);
-    ctx.closePath();
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(x + 61, y + height * 0.59);
-    ctx.lineTo(x + 102, y + height + 26);
-    ctx.lineTo(x + 120, y + height + 23);
-    ctx.lineTo(x + 96, y + height * 0.55);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle = "#e31837";
-    ctx.beginPath();
-    ctx.moveTo(x + width - 42, y + 16);
-    ctx.lineTo(x + width - 19, y - 15);
-    ctx.lineTo(x + width - 8, y - 12);
-    ctx.lineTo(x + width - 18, y + 25);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillRect(x + 25, y + height * 0.42, width - 46, 8);
-
-    ctx.fillStyle = "#173746";
-    for (let windowIndex = 0; windowIndex < 4; windowIndex += 1) {
-      ctx.beginPath();
-      ctx.arc(x + 48 + windowIndex * 18, y + 21, 4, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    ctx.save();
-    ctx.translate(propellerX, propellerY);
-    ctx.rotate(performance.now() * 0.018);
-    ctx.strokeStyle = "#173746";
-    ctx.lineWidth = 5;
-    ctx.beginPath();
-    ctx.moveTo(-3, -28);
-    ctx.lineTo(3, 28);
-    ctx.moveTo(-28, 3);
-    ctx.lineTo(28, -3);
+    ctx.strokeStyle = outline;
+    ctx.lineWidth = 2.5;
     ctx.stroke();
-    ctx.restore();
+    ctx.fillStyle = "#f5b21f";
+    roundedRect(ctx, x + width - 30, cy + 2, 26, 9, 4.5);
+    ctx.fill();
+    ctx.stroke();
 
+    // Back wing (behind the body)
+    ctx.fillStyle = "#e09a12";
+    roundedRect(ctx, cx - 18, cy - 20, 30, 12, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    // Chubby body
+    ctx.fillStyle = "#fffaf0";
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, width * 0.4, height * 0.46, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    // Gold belly stripe
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, width * 0.4, height * 0.46, 0, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.fillStyle = "#f5b21f";
+    ctx.fillRect(cx - width * 0.42, cy + height * 0.12, width * 0.84, height * 0.12);
+    ctx.restore();
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, width * 0.4, height * 0.46, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    // Shine
+    ctx.strokeStyle = "rgba(255,255,255,.95)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(cx + 6, cy - 4, width * 0.3, height * 0.3, 0, Math.PI * 1.15, Math.PI * 1.45);
+    ctx.stroke();
+
+    // Cockpit bubble with a cat pilot wearing goggles
+    const kx = cx + 10;
+    const ky = cy - height * 0.42;
+    ctx.fillStyle = "#bfe9f5";
+    ctx.strokeStyle = outline;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(kx, ky + 6, 15, Math.PI, Math.PI * 2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#9aa3ab";
+    ctx.beginPath();
+    ctx.moveTo(kx - 9, ky - 2);
+    ctx.lineTo(kx - 6, ky - 12);
+    ctx.lineTo(kx - 2, ky - 4);
+    ctx.moveTo(kx + 2, ky - 4);
+    ctx.lineTo(kx + 6, ky - 12);
+    ctx.lineTo(kx + 9, ky - 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(kx, ky + 1, 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+    ctx.fillStyle = "#8b5a2b";
+    ctx.fillRect(kx - 9, ky - 3, 18, 3);
+    ctx.fillStyle = "#e0f7ff";
+    for (const gx of [-3.5, 3.5]) {
+      ctx.beginPath();
+      ctx.arc(kx + gx, ky - 1.5, 2.8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.fillStyle = outline;
+    ctx.beginPath();
+    ctx.arc(kx - 1, ky + 4, 0.9, 0, Math.PI * 2);
+    ctx.arc(kx + 1, ky + 4, 0.9, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Face on the nose: big shiny eyes, blush, smile
+    const fx = x + width * 0.27;
+    const fy = cy - 2;
+    const blink = (t + obstacle.id * 0.7) % 2.6 < 0.12;
+    for (const ex of [fx - 6, fx + 7]) {
+      if (blink) {
+        ctx.strokeStyle = outline;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(ex, fy, 3.4, 0.1 * Math.PI, 0.9 * Math.PI);
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = outline;
+        ctx.beginPath();
+        ctx.ellipse(ex, fy, 3.6, 4.8, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.arc(ex + 1.2, fy - 1.7, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.fillStyle = "rgba(255,120,140,.6)";
+    ctx.beginPath();
+    ctx.ellipse(fx - 12, fy + 7, 4, 2.6, 0, 0, Math.PI * 2);
+    ctx.ellipse(fx + 13, fy + 7, 4, 2.6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#7a3b2e";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(fx + 0.5, fy + 6, 4, 0.15 * Math.PI, 0.85 * Math.PI);
+    ctx.stroke();
+
+    // Front wing
+    ctx.fillStyle = "#f5b21f";
+    ctx.strokeStyle = outline;
+    ctx.lineWidth = 2.5;
+    roundedRect(ctx, cx - 14, cy + 4, 36, 13, 6.5);
+    ctx.fill();
+    ctx.stroke();
+
+    // Nose cap + spinning propeller
+    const propellerX = x + 9;
+    const propellerY = cy;
+    ctx.fillStyle = "#ff8fa3";
+    ctx.beginPath();
+    ctx.arc(propellerX + 4, propellerY, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    const spin = Math.abs(Math.sin(t * 40));
+    ctx.fillStyle = "rgba(60,66,76,.5)";
+    ctx.beginPath();
+    ctx.ellipse(propellerX - 2, propellerY, 3, 6 + spin * 18, 0, 0, Math.PI * 2);
+    ctx.fill();
     ctx.fillStyle = "#ffd84e";
     ctx.beginPath();
-    ctx.arc(propellerX, propellerY, 6, 0, Math.PI * 2);
+    ctx.arc(propellerX - 2, propellerY, 3.2, 0, Math.PI * 2);
     ctx.fill();
+    ctx.stroke();
+  }
+
+  if (obstacle.kind === "truck") {
+    // Chubby little Keychron delivery truck driving towards the rider (cab on the left)
+    const t = performance.now() / 1000;
+    const outline = "#1b1d22";
+    const bob = Math.abs(Math.sin(t * 9 + obstacle.id)) * 1.5;
+    const top = y + bob;
+    const bottom = y + height - 10;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.fillStyle = "rgba(0,0,0,.2)";
+    ctx.beginPath();
+    ctx.ellipse(x + width / 2, GROUND_Y + 3, width * 0.55, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Cargo box with the Keychron logo and a little keyboard
+    const boxX = x + 38;
+    ctx.fillStyle = "#f7f7f4";
+    ctx.strokeStyle = outline;
+    ctx.lineWidth = 2.5;
+    roundedRect(ctx, boxX, top, width - 38, bottom - top, 9);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#f5b21f";
+    ctx.fillRect(boxX + 2, bottom - 12, width - 42, 6);
+    ctx.fillStyle = outline;
+    ctx.font = "900 10px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("KEYCHRON", boxX + (width - 38) / 2, top + 16);
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#3b4048";
+    roundedRect(ctx, boxX + 12, top + 24, width - 62, 16, 3);
+    ctx.fill();
+    ctx.fillStyle = "#d8dde0";
+    for (let row = 0; row < 2; row += 1) {
+      for (let col = 0; col < 7; col += 1) {
+        ctx.fillStyle = row === 0 && col === 0 ? "#f5b21f" : row === 1 && col === 6 ? "#8eddf1" : "#d8dde0";
+        ctx.fillRect(boxX + 15 + col * 6.2, top + 27 + row * 6, 4.6, 4);
+      }
+    }
+
+    // Cab: rounded nose with a big windscreen
+    ctx.fillStyle = "#f5b21f";
+    ctx.strokeStyle = outline;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(boxX + 4, top + 12);
+    ctx.lineTo(x + 20, top + 12);
+    ctx.quadraticCurveTo(x + 4, top + 14, x + 2, top + 34);
+    ctx.lineTo(x + 2, bottom - 4);
+    ctx.quadraticCurveTo(x + 2, bottom, x + 6, bottom);
+    ctx.lineTo(boxX + 4, bottom);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#bfe9f5";
+    ctx.beginPath();
+    ctx.moveTo(x + 21, top + 17);
+    ctx.lineTo(boxX - 2, top + 17);
+    ctx.lineTo(boxX - 2, top + 32);
+    ctx.lineTo(x + 9, top + 32);
+    ctx.quadraticCurveTo(x + 10, top + 19, x + 21, top + 17);
+    ctx.closePath();
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(255,255,255,.9)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x + 18, top + 21);
+    ctx.lineTo(x + 24, top + 21);
+    ctx.stroke();
+
+    // Face on the front: headlight eyes, blush, smiling grille
+    const blink = (t + obstacle.id * 0.53) % 2.8 < 0.12;
+    for (const ey of [top + 40]) {
+      for (const ex of [x + 9, x + 23]) {
+        ctx.fillStyle = "#fffbe0";
+        ctx.strokeStyle = outline;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(ex, ey, 5.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        if (blink) {
+          ctx.beginPath();
+          ctx.arc(ex, ey - 0.5, 3, 0.1 * Math.PI, 0.9 * Math.PI);
+          ctx.stroke();
+        } else {
+          ctx.fillStyle = outline;
+          ctx.beginPath();
+          ctx.ellipse(ex - 1, ey, 2.6, 3.2, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "#ffffff";
+          ctx.beginPath();
+          ctx.arc(ex - 0.2, ey - 1.3, 1.1, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+    ctx.fillStyle = "rgba(255,120,140,.65)";
+    ctx.beginPath();
+    ctx.ellipse(x + 6, top + 50, 3.6, 2.3, 0, 0, Math.PI * 2);
+    ctx.ellipse(x + 29, top + 50, 3.6, 2.3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#7a3b2e";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x + 16, top + 49, 4, 0.15 * Math.PI, 0.85 * Math.PI);
+    ctx.stroke();
+    ctx.fillStyle = "#c98a0c";
+    roundedRect(ctx, x, bottom - 8, 12, 6, 3);
+    ctx.fill();
+
+    // Wheels
+    for (const wx of [x + 22, x + width - 22]) {
+      ctx.save();
+      ctx.translate(wx, bottom + 1);
+      ctx.rotate(-t * 12);
+      ctx.fillStyle = "#23272d";
+      ctx.beginPath();
+      ctx.arc(0, 0, 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = outline;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = "#cfd4d9";
+      ctx.beginPath();
+      ctx.arc(0, 0, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#23272d";
+      ctx.fillRect(-1, -4.5, 2, 3);
+      ctx.restore();
+    }
   }
   ctx.restore();
 }
@@ -3093,6 +3323,7 @@ function PizzaDashGame() {
         // jumping rider hits it, only sliding gets under.
         banner: { w: 170, h: GROUND_Y - 92, y: 0 },
         drone: { w: 92, h: 36, y: GROUND_Y - 128 },
+        truck: { w: 108, h: 72, y: GROUND_Y - 72 },
       };
       const spec = specs[kind];
       const spawnX = WORLD_WIDTH + 50;
@@ -3693,12 +3924,12 @@ function PizzaDashGame() {
         <div className="control-copy">
           <p className="section-kicker">HOW TO PLAY</p>
           <h2>Get to PAX in one piece</h2>
-          <p>You run automatically and speed up the further you go. Jump over cones, barriers, puddles and stacks of boxes. Stay low under planes, and slide under signs, banners and drones. Collect all eight KEYCHRON keycaps for a shield and a big keyboard bonus.</p>
+          <p>You run automatically and speed up the further you go. Jump over cones, barriers, puddles, delivery trucks and stacks of boxes. Stay low under planes, and slide under signs, banners and drones. Collect all eight KEYCHRON keycaps for a shield and a big keyboard bonus.</p>
         </div>
         <div className="keyboard-guide">
           <div className="guide-item">
             <kbd>SPACE</kbd>
-            <div><b>Jump</b><span>Cones, puddles, barriers, boxes</span></div>
+            <div><b>Jump</b><span>Cones, puddles, barriers, trucks, boxes</span></div>
           </div>
           <div className="guide-item">
             <div className="key-cluster"><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></div>
