@@ -1700,66 +1700,11 @@ function drawPlayer(
   } else {
     const sway = Math.sin(state.elapsed * 6) * 4;
     const tuck = airborne ? 8 : 0;
-    // Skate push: every PUSH_PERIOD seconds the back foot steps off the board,
-    // plants beside it, pushes back towards the tail and returns to the board,
-    // while the rider dips onto the front leg. Legs use fixed-length two-bone
-    // IK so they never stretch.
-    const PUSH_PERIOD = 2.2;
-    const PUSH_TIME = 0.55;
-    const LEG_SEGMENT = 26; // thigh = shin
-    const pushT = airborne ? 1 : (state.elapsed % PUSH_PERIOD) / PUSH_TIME;
-    const pushing = pushT < 1;
-    const crouch = pushing ? Math.sin(pushT * Math.PI) * 10 : 0;
-    type Point = [number, number];
-    const lerpPoint = (a: Point, b: Point, t: number): Point => [
-      a[0] + (b[0] - a[0]) * t,
-      a[1] + (b[1] - a[1]) * t,
-    ];
-    const onBoard: Point = [52, H - 22 - tuck * 0.4];
-    const plant: Point = [82, H + 1];
-    const pushEnd: Point = [40, H + 1];
-    let backFoot = onBoard;
-    if (pushing) {
-      if (pushT < 0.2) {
-        const t = pushT / 0.2;
-        const p = lerpPoint(onBoard, plant, t);
-        backFoot = [p[0], p[1] - Math.sin(t * Math.PI) * 8];
-      } else if (pushT < 0.75) {
-        backFoot = lerpPoint(plant, pushEnd, (pushT - 0.2) / 0.55);
-      } else {
-        const t = (pushT - 0.75) / 0.25;
-        const p = lerpPoint(pushEnd, onBoard, t);
-        backFoot = [p[0], p[1] - Math.sin(t * Math.PI) * 10];
-      }
-    }
-    // Knee for a leg from hip to foot, bending forward (towards +x).
-    const knee = (hip: Point, foot: Point): Point => {
-      const dx = foot[0] - hip[0];
-      const dy = foot[1] - hip[1];
-      const dist = Math.hypot(dx, dy) || 1;
-      const reach = Math.min(dist, LEG_SEGMENT * 2 - 0.5);
-      const mx = hip[0] + (dx / dist) * (reach / 2);
-      const my = hip[1] + (dy / dist) * (reach / 2);
-      const h = Math.sqrt(Math.max(0, LEG_SEGMENT * LEG_SEGMENT - (reach / 2) ** 2));
-      let nx = -dy / dist;
-      let ny = dx / dist;
-      if (nx < 0) {
-        nx = -nx;
-        ny = -ny;
-      }
-      return [mx + nx * h, my + ny * h];
-    };
-    const backHip: Point = [68, H - 50 + crouch];
-    const frontHip: Point = [78, H - 50 + crouch];
-    const frontFoot: Point = [100, H - 24 - tuck * 0.4];
-    // Legs (behind the body)
-    drawLimb(denim, 11, [backHip, knee(backHip, backFoot), backFoot]);
-    drawLimb(denim, 11, [frontHip, knee(frontHip, frontFoot), frontFoot]);
-    drawShoe(backFoot[0] - 1, backFoot[1] + 2);
+    // Legs: wide skate stance, knees tuck up during an ollie
+    drawLimb(denim, 11, [[68, H - 50], [56, H - 38 - tuck], [52, H - 24 - tuck * 0.4]]);
+    drawLimb(denim, 11, [[78, H - 50], [92, H - 38 - tuck], [100, H - 24 - tuck * 0.4]]);
+    drawShoe(51, H - 22 - tuck * 0.4);
     drawShoe(101, H - 22 - tuck * 0.4);
-    // Upper body dips with the push
-    ctx.save();
-    ctx.translate(0, crouch);
     drawBackpack(32, H - 92);
     // Back arm out for balance
     drawLimb(ink, 8, [[64, H - 78], [44, H - 64 + sway], [26, H - 68 + sway]]);
@@ -1781,7 +1726,6 @@ function drawPlayer(
     ctx.arc(117, H - 80 - sway, 5, 0, Math.PI * 2);
     ctx.fill();
     drawFace(76, H - 104, 26, airborne && player.velocityY < 0);
-    ctx.restore();
   }
 
   ctx.restore();
