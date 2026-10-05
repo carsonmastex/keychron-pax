@@ -22,7 +22,7 @@ const GROUND_Y = 570;
 
 // Booth difficulty: runs should last about a minute so the queue keeps moving.
 // (Original Taiwan values in brackets.)
-const START_SPEED = 9.5; // [6.6]
+const START_SPEED = 11; // [6.6]
 const MAX_SPEED = 20; // [14.8]
 // Speed goes up in steps: +SPEED_STEP every SPEED_STEP_METRES (about a minute
 // to reach MAX_SPEED). [Original: smooth +1 every 480 m]
@@ -1700,10 +1700,36 @@ function drawPlayer(
   } else {
     const sway = Math.sin(state.elapsed * 6) * 4;
     const tuck = airborne ? 8 : 0;
+    // Back foot: rides on the board, but every PUSH_PERIOD seconds it steps
+    // down, kicks back along the ground, and comes back up onto the tail.
+    const PUSH_PERIOD = 1.8;
+    const PUSH_TIME = 0.6;
+    const pushT = (state.elapsed % PUSH_PERIOD) / PUSH_TIME;
+    const onBoard: [number, number] = [52, H - 22 - tuck * 0.4];
+    const plant: [number, number] = [44, H + 1];
+    const kickEnd: [number, number] = [8, H + 1];
+    const lerpPoint = (a: [number, number], b: [number, number], t: number): [number, number] => [
+      a[0] + (b[0] - a[0]) * t,
+      a[1] + (b[1] - a[1]) * t,
+    ];
+    let backFoot = onBoard;
+    if (!airborne && pushT < 1) {
+      if (pushT < 0.2) backFoot = lerpPoint(onBoard, plant, pushT / 0.2);
+      else if (pushT < 0.8) backFoot = lerpPoint(plant, kickEnd, (pushT - 0.2) / 0.6);
+      else {
+        const back = lerpPoint(kickEnd, onBoard, (pushT - 0.8) / 0.2);
+        backFoot = [back[0], back[1] - Math.sin(((pushT - 0.8) / 0.2) * Math.PI) * 10];
+      }
+    }
+    const hip: [number, number] = [68, H - 50];
+    const backKnee: [number, number] = [
+      (hip[0] + backFoot[0]) / 2 - 4,
+      (hip[1] + backFoot[1]) / 2 - 2 - (backFoot === onBoard ? tuck : 0),
+    ];
     // Legs: wide skate stance, knees tuck up during an ollie
-    drawLimb(denim, 11, [[68, H - 50], [56, H - 38 - tuck], [52, H - 24 - tuck * 0.4]]);
+    drawLimb(denim, 11, [hip, backKnee, backFoot]);
     drawLimb(denim, 11, [[78, H - 50], [92, H - 38 - tuck], [100, H - 24 - tuck * 0.4]]);
-    drawShoe(51, H - 22 - tuck * 0.4);
+    drawShoe(backFoot[0] - 1, backFoot[1] + 2);
     drawShoe(101, H - 22 - tuck * 0.4);
     drawBackpack(32, H - 92);
     // Back arm out for balance
