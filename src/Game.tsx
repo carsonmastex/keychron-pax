@@ -10,6 +10,7 @@ import paxLogoUrl from "../assets/pax-aus-logo.png";
 import paxFlagsLogoUrl from "../assets/pax26-flags-logo-sm.png";
 import {
   addScore,
+  clearLocalScores,
   countScoresAbove,
   subscribeLeaderboard,
   type LeaderboardEntry,
@@ -2052,6 +2053,8 @@ function PizzaDashGame() {
   const [saveError, setSaveError] = useState("");
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [leaderboardError, setLeaderboardError] = useState("");
+  const [staffNotice, setStaffNotice] = useState("");
+  const resetArmedUntilRef = useRef(0);
   const [lastSavedEntryId, setLastSavedEntryId] = useState<string | null>(null);
   const [playerRank, setPlayerRank] = useState<number | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -2503,6 +2506,28 @@ function PizzaDashGame() {
         startGame();
       }
       if (event.code === "KeyF" && !event.repeat) void toggleFullscreen();
+      // Staff: Ctrl+Shift+Backspace twice within 3 s clears this computer's leaderboard.
+      if (
+        event.code === "Backspace" &&
+        event.shiftKey &&
+        (event.ctrlKey || event.metaKey) &&
+        !event.repeat
+      ) {
+        event.preventDefault();
+        if (performance.now() < resetArmedUntilRef.current) {
+          resetArmedUntilRef.current = 0;
+          void clearLocalScores().then((cleared) =>
+            setStaffNotice(
+              cleared
+                ? "Leaderboard cleared on this computer"
+                : "This leaderboard is shared on Claude. Ask Claude to clear it.",
+            ),
+          );
+        } else {
+          resetArmedUntilRef.current = performance.now() + 3000;
+          setStaffNotice("Press Ctrl+Shift+Backspace again to clear the leaderboard");
+        }
+      }
     };
     const onKeyUp = (event: KeyboardEvent) => {
       if (isLeftKey(event)) keysRef.current.left = false;
@@ -2529,6 +2554,12 @@ function PizzaDashGame() {
       window.removeEventListener("blur", onBlur);
     };
   }, [changeMode, jump, startGame, toggleFullscreen, togglePause]);
+
+  useEffect(() => {
+    if (!staffNotice) return;
+    const timer = window.setTimeout(() => setStaffNotice(""), 3200);
+    return () => window.clearTimeout(timer);
+  }, [staffNotice]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -3261,6 +3292,12 @@ function PizzaDashGame() {
           onPointerCancel={() => setControl("right", false)}
         >→<span>Right</span></button>
       </section>
+
+      {staffNotice && (
+        <div className="staff-notice" role="status">
+          {staffNotice}
+        </div>
+      )}
 
       <footer className="site-footer">
         <span>KEYCHRON × PAX AUS 2026</span>

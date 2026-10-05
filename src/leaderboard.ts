@@ -141,6 +141,19 @@ export async function addScore(entry: NewEntry): Promise<string> {
   }
 }
 
+/**
+ * Staff reset for the leaderboard kept in this browser (GitHub Pages / offline).
+ * Returns false on Claude, where the shared board lives in the artifact's
+ * database and is cleared by the owner instead.
+ */
+export async function clearLocalScores(): Promise<boolean> {
+  if (await getDb()) return false;
+  memoryEntries = [];
+  writeLocal([]);
+  localListeners.forEach((listener) => listener([]));
+  return true;
+}
+
 /** How many saved scores beat this one (rank = result + 1). */
 export async function countScoresAbove(score: number): Promise<number> {
   const db = await getDb();

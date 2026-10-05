@@ -27,6 +27,8 @@ Based on Pizza Dash (Domino's × Keychron) by the Mastex Taiwan team.
   computer has its own leaderboard.
 - The Claude artifact version stores scores in Claude, so every signed-in
   computer shares one leaderboard.
+- Staff reset (GitHub Pages): press **Ctrl+Shift+Backspace** twice within
+  3 seconds to clear this computer's leaderboard.
 
 ## Build
 
