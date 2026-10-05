@@ -1467,15 +1467,17 @@ function drawPlayer(
   const player = state.player;
   if (player.invincible > 0 && Math.floor(player.invincible * 12) % 2 === 0) return;
 
-  const bounce = player.grounded ? Math.sin(state.elapsed * 15) * 2 : 0;
+  const bounce = player.grounded ? Math.sin(state.elapsed * 15) * 1.5 : 0;
   const x = player.x;
   const y = player.y + bounce;
   const H = player.height;
-  const wheelAngle = state.scroll * 0.06;
+  const wheelAngle = state.scroll * 0.09;
+  const airborne = !player.grounded;
   const gold = "#f5b21f";
-  const goldDark = "#c98a0c";
   const ink = "#23272d";
+  const line = "#1b1d22";
   const skin = "#ffd9bd";
+  const denim = "#3d5a80";
 
   if (player.shield > 0) {
     const pulse = 0.5 + Math.sin(state.elapsed * 9) * 0.3;
@@ -1496,160 +1498,94 @@ function drawPlayer(
 
   ctx.save();
   ctx.translate(x, y);
-  if (!player.grounded) ctx.rotate(-0.06);
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
 
-  // Ground shadow
+  // Ground shadow (stays on the ground while jumping)
   ctx.fillStyle = "rgba(0,0,0,.22)";
   ctx.beginPath();
-  ctx.ellipse(76, H + 7 - bounce, 72, 10, 0, 0, Math.PI * 2);
+  ctx.ellipse(76, H + 7 - bounce, airborne ? 48 : 62, 9, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Speed lines while riding
-  if (player.grounded) {
+  // Speed lines while rolling
+  if (!airborne) {
     ctx.strokeStyle = "rgba(255,255,255,.7)";
     ctx.lineWidth = 3;
-    for (let line = 0; line < 3; line += 1) {
-      const drift = (state.elapsed * 160 + line * 23) % 26;
-      const ly = H - 56 + line * 14;
+    for (let index = 0; index < 3; index += 1) {
+      const drift = (state.elapsed * 160 + index * 23) % 26;
+      const ly = H - 46 + index * 14;
       ctx.beginPath();
-      ctx.moveTo(-6 - drift, ly);
-      ctx.lineTo(-20 - drift, ly);
+      ctx.moveTo(8 - drift, ly);
+      ctx.lineTo(-6 - drift, ly);
       ctx.stroke();
     }
   }
 
-  // ---- Scooter (round Vespa-style, PAX gold) ----
-  // Keyboard box on the rear rack
-  ctx.strokeStyle = "#3a3f48";
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(4, H - 54);
-  ctx.lineTo(30, H - 54);
-  ctx.stroke();
-  ctx.fillStyle = ink;
-  roundedRect(ctx, 2, H - 84, 34, 28, 6);
-  ctx.fill();
-  const capColors = ["#f5b21f", "#8eddf1", "#f5f5f2", "#f5f5f2", "#e23b3b", "#f5f5f2"];
-  capColors.forEach((color, index) => {
-    ctx.fillStyle = color;
-    roundedRect(ctx, 6 + (index % 3) * 10, H - 79 + Math.floor(index / 3) * 10, 8, 8, 2);
-    ctx.fill();
-  });
-
-  // Cartoon outline so the gold scooter stands out from the gold pavement
-  const outline = () => {
-    ctx.strokeStyle = "#1b1d22";
-    ctx.lineWidth = 3;
-    ctx.stroke();
-  };
-
-  // Rear cowl
+  // ---- Skateboard ----
+  // Ollie: nose tips up while rising, levels out on the way down.
+  const boardTilt = airborne ? clamp(player.velocityY / 2600, -0.32, 0.1) : 0;
+  const boardY = H - 16;
+  ctx.save();
+  ctx.translate(76, boardY);
+  ctx.rotate(boardTilt);
+  // Deck with kicked-up nose and tail
   ctx.fillStyle = gold;
   ctx.beginPath();
-  ctx.ellipse(46, H - 32, 36, 21, 0, 0, Math.PI * 2);
-  ctx.fill();
-  outline();
-  ctx.fillStyle = "rgba(255,255,255,.45)";
-  ctx.beginPath();
-  ctx.ellipse(32, H - 41, 12, 5, -0.3, 0, Math.PI * 2);
-  ctx.fill();
-  // Keychron "K" sticker
-  ctx.fillStyle = "#ffffff";
-  ctx.beginPath();
-  ctx.arc(56, H - 30, 7, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = ink;
-  ctx.font = "900 10px Arial";
-  ctx.textAlign = "center";
-  ctx.fillText("K", 56, H - 26);
-  ctx.textAlign = "left";
-
-  // Floorboard
-  ctx.fillStyle = "#3a3f48";
-  roundedRect(ctx, 58, H - 26, 48, 9, 4);
-  ctx.fill();
-
-  // Seat
-  ctx.fillStyle = "#3a3f48";
-  roundedRect(ctx, 22, H - 58, 50, 11, 6);
-  ctx.fill();
-
-  // Leg shield + steering column
-  ctx.fillStyle = gold;
-  ctx.beginPath();
-  ctx.moveTo(98, H - 20);
-  ctx.quadraticCurveTo(100, H - 64, 116, H - 76);
-  ctx.lineTo(128, H - 70);
-  ctx.quadraticCurveTo(114, H - 56, 118, H - 20);
+  ctx.moveTo(-58, -10);
+  ctx.quadraticCurveTo(-52, 0, -40, 0);
+  ctx.lineTo(40, 0);
+  ctx.quadraticCurveTo(52, 0, 58, -10);
+  ctx.lineTo(60, -6);
+  ctx.quadraticCurveTo(54, 7, 40, 7);
+  ctx.lineTo(-40, 7);
+  ctx.quadraticCurveTo(-54, 7, -60, -6);
   ctx.closePath();
   ctx.fill();
-  outline();
-  ctx.fillStyle = goldDark;
-  ctx.fillRect(106, H - 40, 8, 3);
-
-  // Front fender
-  ctx.fillStyle = gold;
-  ctx.beginPath();
-  ctx.ellipse(122, H - 20, 20, 11, 0, Math.PI, Math.PI * 2);
-  ctx.fill();
-  outline();
-
-  // Handlebar + big round headlight
-  ctx.strokeStyle = ink;
-  ctx.lineWidth = 5;
-  ctx.beginPath();
-  ctx.moveTo(112, H - 80);
-  ctx.lineTo(128, H - 84);
+  ctx.strokeStyle = line;
+  ctx.lineWidth = 3;
   ctx.stroke();
-  ctx.fillStyle = "rgba(255,240,170,.35)";
-  ctx.beginPath();
-  ctx.arc(130, H - 72, 13, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#fff6c8";
-  ctx.strokeStyle = goldDark;
+  // Grip tape
+  ctx.strokeStyle = ink;
   ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.arc(130, H - 72, 8, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.moveTo(-40, 1);
+  ctx.lineTo(40, 1);
   ctx.stroke();
-
-  // Wheels
-  for (const wx of [36, 122]) {
+  // Trucks + wheels
+  for (const wx of [-30, 30]) {
+    ctx.fillStyle = "#9aa3ab";
+    ctx.fillRect(wx - 7, 7, 14, 4);
     ctx.save();
-    ctx.translate(wx, H - 12);
+    ctx.translate(wx, 15);
     ctx.rotate(wheelAngle);
-    ctx.fillStyle = "#1b1d22";
+    ctx.fillStyle = "#f5f5f2";
     ctx.beginPath();
-    ctx.arc(0, 0, 14, 0, Math.PI * 2);
+    ctx.arc(0, 0, 7, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = "#cfd4d9";
-    ctx.beginPath();
-    ctx.arc(0, 0, 6, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#1b1d22";
-    ctx.fillRect(-1.5, -6, 3, 4);
+    ctx.strokeStyle = line;
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    ctx.fillStyle = "#8eddf1";
+    ctx.fillRect(-1.5, -6, 3, 5);
     ctx.restore();
   }
+  ctx.restore();
 
   // ---- Rider (chibi) ----
   const blink = state.elapsed % 3.4 < 0.13;
   const drawFace = (hx: number, hy: number, r: number, squint: boolean) => {
-    // Hair peeking out at the back
     ctx.fillStyle = "#4a3426";
     ctx.beginPath();
     ctx.arc(hx - r * 0.55, hy + r * 0.15, r * 0.42, 0, Math.PI * 2);
     ctx.fill();
-    // Face
     ctx.fillStyle = skin;
     ctx.beginPath();
     ctx.arc(hx, hy, r, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = "#1b1d22";
+    ctx.strokeStyle = line;
     ctx.lineWidth = 2.5;
     ctx.stroke();
-    // Helmet dome with gold stripe and K badge
+    // Helmet with gold stripe and K badge
     ctx.fillStyle = ink;
     ctx.beginPath();
     ctx.arc(hx, hy - 1, r + 3, Math.PI * 0.98, Math.PI * 2.02);
@@ -1676,11 +1612,10 @@ function drawPlayer(
     ctx.arc(hx + r * 0.86, hy + r * 0.38, r * 0.15, 0, Math.PI * 2);
     ctx.fill();
     // Eyes
-    const eyes = [hx + r * 0.3, hx + r * 0.72];
-    ctx.strokeStyle = "#1b1d22";
-    ctx.fillStyle = "#1b1d22";
+    ctx.strokeStyle = line;
+    ctx.fillStyle = line;
     ctx.lineWidth = 2.5;
-    for (const ex of eyes) {
+    for (const ex of [hx + r * 0.3, hx + r * 0.72]) {
       const ey = hy + r * 0.1;
       if (squint) {
         ctx.beginPath();
@@ -1701,7 +1636,7 @@ function drawPlayer(
         ctx.beginPath();
         ctx.arc(ex + r * 0.04, ey - r * 0.07, r * 0.06, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = "#1b1d22";
+        ctx.fillStyle = line;
       }
     }
     // Smile
@@ -1712,53 +1647,85 @@ function drawPlayer(
     ctx.stroke();
   };
 
-  if (player.sliding) {
-    // Ducked low over the handlebar
+  // Keyboard backpack with colourful keycaps
+  const drawBackpack = (bx: number, by: number) => {
     ctx.fillStyle = ink;
-    roundedRect(ctx, 46, H - 62, 52, 22, 11);
+    roundedRect(ctx, bx, by, 26, 32, 7);
     ctx.fill();
-    ctx.strokeStyle = ink;
-    ctx.lineWidth = 8;
-    ctx.beginPath();
-    ctx.moveTo(90, H - 54);
-    ctx.lineTo(114, H - 80);
+    ctx.strokeStyle = line;
+    ctx.lineWidth = 2.5;
     ctx.stroke();
-    drawFace(98, H - 60, 20, true);
-  } else {
-    // Legs + gold sneaker
-    ctx.strokeStyle = "#3d5a80";
-    ctx.lineWidth = 11;
+    const caps = ["#f5b21f", "#8eddf1", "#f5f5f2", "#e23b3b", "#f5f5f2", "#f5b21f"];
+    caps.forEach((color, index) => {
+      ctx.fillStyle = color;
+      roundedRect(ctx, bx + 4 + (index % 2) * 10, by + 4 + Math.floor(index / 2) * 9, 8, 7, 2);
+      ctx.fill();
+    });
+  };
+
+  const drawLimb = (color: string, width: number, points: [number, number][]) => {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
     ctx.beginPath();
-    ctx.moveTo(62, H - 54);
-    ctx.lineTo(80, H - 48);
-    ctx.lineTo(86, H - 30);
+    ctx.moveTo(points[0][0], points[0][1]);
+    for (const [px, py] of points.slice(1)) ctx.lineTo(px, py);
     ctx.stroke();
+  };
+  const drawShoe = (sx: number, sy: number) => {
     ctx.fillStyle = gold;
     ctx.beginPath();
-    ctx.ellipse(90, H - 27, 9, 5, 0, 0, Math.PI * 2);
+    ctx.ellipse(sx, sy, 9, 5, 0, 0, Math.PI * 2);
     ctx.fill();
+    ctx.strokeStyle = line;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  };
+
+  if (player.sliding) {
+    // Crouched low, one hand grabbing the board
+    drawLimb(denim, 10, [[70, H - 36], [56, H - 34], [54, H - 22]]);
+    drawLimb(denim, 10, [[80, H - 36], [96, H - 36], [98, H - 22]]);
+    drawShoe(54, H - 21);
+    drawShoe(99, H - 21);
+    drawBackpack(46, H - 70);
+    ctx.fillStyle = ink;
+    roundedRect(ctx, 62, H - 58, 32, 26, 11);
+    ctx.fill();
+    drawLimb(ink, 7, [[84, H - 46], [104, H - 30], [108, H - 20]]);
+    ctx.fillStyle = skin;
+    ctx.beginPath();
+    ctx.arc(108, H - 20, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+    drawFace(98, H - 56, 20, true);
+  } else {
+    const sway = Math.sin(state.elapsed * 6) * 4;
+    const tuck = airborne ? 8 : 0;
+    // Legs: wide skate stance, knees tuck up during an ollie
+    drawLimb(denim, 11, [[68, H - 50], [56, H - 38 - tuck], [52, H - 24 - tuck * 0.4]]);
+    drawLimb(denim, 11, [[78, H - 50], [92, H - 38 - tuck], [100, H - 24 - tuck * 0.4]]);
+    drawShoe(51, H - 22 - tuck * 0.4);
+    drawShoe(101, H - 22 - tuck * 0.4);
+    drawBackpack(32, H - 92);
+    // Back arm out for balance
+    drawLimb(ink, 8, [[64, H - 78], [44, H - 64 + sway], [26, H - 68 + sway]]);
     // Hoodie body
     ctx.fillStyle = ink;
-    roundedRect(ctx, 48, H - 86, 32, 36, 12);
+    roundedRect(ctx, 56, H - 86, 32, 38, 12);
     ctx.fill();
     ctx.fillStyle = gold;
     ctx.font = "900 9px Arial";
     ctx.textAlign = "center";
-    ctx.fillText("PAX", 64, H - 64);
+    ctx.fillText("PAX", 72, H - 62);
     ctx.textAlign = "left";
-    // Arm to the handlebar
-    ctx.strokeStyle = ink;
-    ctx.lineWidth = 8;
-    ctx.beginPath();
-    ctx.moveTo(70, H - 76);
-    ctx.lineTo(112, H - 82);
-    ctx.stroke();
+    // Front arm out for balance
+    drawLimb(ink, 8, [[80, H - 78], [102, H - 72 - sway], [116, H - 80 - sway]]);
     ctx.fillStyle = skin;
     ctx.beginPath();
-    ctx.arc(113, H - 82, 5, 0, Math.PI * 2);
+    ctx.arc(26, H - 68 + sway, 5, 0, Math.PI * 2);
+    ctx.moveTo(122, H - 80 - sway);
+    ctx.arc(117, H - 80 - sway, 5, 0, Math.PI * 2);
     ctx.fill();
-    // Big head
-    drawFace(68, H - 100, 26, !player.grounded && player.velocityY < 0);
+    drawFace(76, H - 104, 26, airborne && player.velocityY < 0);
   }
 
   ctx.restore();
