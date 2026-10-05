@@ -1452,78 +1452,43 @@ function drawObstacle(ctx: CanvasRenderingContext2D, obstacle: Obstacle) {
     ctx.ellipse(cx + 6, cy - 4, width * 0.3, height * 0.3, 0, Math.PI * 1.15, Math.PI * 1.45);
     ctx.stroke();
 
-    // Cockpit bubble with a cat pilot wearing goggles
-    const kx = cx + 10;
-    const ky = cy - height * 0.42;
-    ctx.fillStyle = "#bfe9f5";
+    // Tinted windscreen on the nose and a row of round cabin windows
+    ctx.fillStyle = "#2e4a5c";
     ctx.strokeStyle = outline;
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 2.2;
     ctx.beginPath();
-    ctx.arc(kx, ky + 6, 15, Math.PI, Math.PI * 2);
+    ctx.moveTo(x + width * 0.2, cy - 6);
+    ctx.quadraticCurveTo(x + width * 0.24, cy - height * 0.36, x + width * 0.36, cy - height * 0.38);
+    ctx.lineTo(x + width * 0.37, cy - 6);
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = "#9aa3ab";
+    ctx.strokeStyle = "rgba(255,255,255,.75)";
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(kx - 9, ky - 2);
-    ctx.lineTo(kx - 6, ky - 12);
-    ctx.lineTo(kx - 2, ky - 4);
-    ctx.moveTo(kx + 2, ky - 4);
-    ctx.lineTo(kx + 6, ky - 12);
-    ctx.lineTo(kx + 9, ky - 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(kx, ky + 1, 8, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.lineWidth = 1.6;
+    ctx.moveTo(x + width * 0.27, cy - height * 0.28);
+    ctx.lineTo(x + width * 0.31, cy - height * 0.3);
     ctx.stroke();
-    ctx.fillStyle = "#8b5a2b";
-    ctx.fillRect(kx - 9, ky - 3, 18, 3);
-    ctx.fillStyle = "#e0f7ff";
-    for (const gx of [-3.5, 3.5]) {
+    for (let w = 0; w < 4; w += 1) {
+      const wx = x + width * 0.46 + w * 13;
+      ctx.fillStyle = "#bfe0ee";
+      ctx.strokeStyle = outline;
+      ctx.lineWidth = 1.8;
       ctx.beginPath();
-      ctx.arc(kx + gx, ky - 1.5, 2.8, 0, Math.PI * 2);
+      ctx.arc(wx, cy - 6, 4.2, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
     }
-    ctx.fillStyle = outline;
-    ctx.beginPath();
-    ctx.arc(kx - 1, ky + 4, 0.9, 0, Math.PI * 2);
-    ctx.arc(kx + 1, ky + 4, 0.9, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Face on the nose: big shiny eyes, blush, smile
-    const fx = x + width * 0.27;
-    const fy = cy - 2;
-    const blink = (t + obstacle.id * 0.7) % 2.6 < 0.12;
-    for (const ex of [fx - 6, fx + 7]) {
-      if (blink) {
-        ctx.strokeStyle = outline;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(ex, fy, 3.4, 0.1 * Math.PI, 0.9 * Math.PI);
-        ctx.stroke();
-      } else {
-        ctx.fillStyle = outline;
-        ctx.beginPath();
-        ctx.ellipse(ex, fy, 3.6, 4.8, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = "#ffffff";
-        ctx.beginPath();
-        ctx.arc(ex + 1.2, fy - 1.7, 1.5, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-    ctx.fillStyle = "rgba(255,120,140,.6)";
-    ctx.beginPath();
-    ctx.ellipse(fx - 12, fy + 7, 4, 2.6, 0, 0, Math.PI * 2);
-    ctx.ellipse(fx + 13, fy + 7, 4, 2.6, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "#7a3b2e";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(fx + 0.5, fy + 6, 4, 0.15 * Math.PI, 0.85 * Math.PI);
+    // Door outline and tail registration
+    ctx.strokeStyle = "rgba(27,29,34,.45)";
+    ctx.lineWidth = 1.5;
+    roundedRect(ctx, x + width * 0.4, cy - 12, 9, 22, 3);
     ctx.stroke();
+    ctx.fillStyle = outline;
+    ctx.font = "900 8px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("PAX26", x + width - 34, cy - 10);
+    ctx.textAlign = "left";
 
     // Front wing
     ctx.fillStyle = "#f5b21f";
@@ -1625,46 +1590,54 @@ function drawObstacle(ctx: CanvasRenderingContext2D, obstacle: Obstacle) {
     ctx.lineTo(x + 24, top + 21);
     ctx.stroke();
 
-    // Face on the front: headlight eyes, blush, smiling grille
-    const blink = (t + obstacle.id * 0.53) % 2.8 < 0.12;
-    for (const ey of [top + 40]) {
-      for (const ex of [x + 9, x + 23]) {
-        ctx.fillStyle = "#fffbe0";
-        ctx.strokeStyle = outline;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(ex, ey, 5.5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-        if (blink) {
-          ctx.beginPath();
-          ctx.arc(ex, ey - 0.5, 3, 0.1 * Math.PI, 0.9 * Math.PI);
-          ctx.stroke();
-        } else {
-          ctx.fillStyle = outline;
-          ctx.beginPath();
-          ctx.ellipse(ex - 1, ey, 2.6, 3.2, 0, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = "#ffffff";
-          ctx.beginPath();
-          ctx.arc(ex - 0.2, ey - 1.3, 1.1, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-    }
-    ctx.fillStyle = "rgba(255,120,140,.65)";
-    ctx.beginPath();
-    ctx.ellipse(x + 6, top + 50, 3.6, 2.3, 0, 0, Math.PI * 2);
-    ctx.ellipse(x + 29, top + 50, 3.6, 2.3, 0, 0, Math.PI * 2);
+    // Front end: grille, round headlights, bumper
+    ctx.fillStyle = "#3b4048";
+    ctx.strokeStyle = outline;
+    ctx.lineWidth = 2;
+    roundedRect(ctx, x + 3, top + 38, 9, 16, 3);
     ctx.fill();
-    ctx.strokeStyle = "#7a3b2e";
+    ctx.stroke();
+    ctx.strokeStyle = "#9aa3ab";
+    ctx.lineWidth = 1.4;
+    for (let bar = 0; bar < 3; bar += 1) {
+      ctx.beginPath();
+      ctx.moveTo(x + 5, top + 42 + bar * 4);
+      ctx.lineTo(x + 10, top + 42 + bar * 4);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "#fff6c8";
+    ctx.strokeStyle = outline;
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(x + 16, top + 49, 4, 0.15 * Math.PI, 0.85 * Math.PI);
-    ctx.stroke();
-    ctx.fillStyle = "#c98a0c";
-    roundedRect(ctx, x, bottom - 8, 12, 6, 3);
+    ctx.arc(x + 8, top + 33, 4, 0, Math.PI * 2);
     ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#ff8a3d";
+    ctx.beginPath();
+    ctx.arc(x + 8, bottom - 10, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#cfd4d9";
+    roundedRect(ctx, x - 2, bottom - 7, 18, 6, 3);
+    ctx.fill();
+    ctx.stroke();
+    // Door with handle, side mirror, roof marker lights
+    ctx.strokeStyle = "rgba(27,29,34,.5)";
+    ctx.lineWidth = 1.6;
+    roundedRect(ctx, x + 17, top + 34, boxX - x - 21, bottom - top - 40, 3);
+    ctx.stroke();
+    ctx.fillStyle = "#3b4048";
+    ctx.fillRect(x + 21, top + 39, 6, 2.4);
+    ctx.fillStyle = "#3b4048";
+    ctx.strokeStyle = outline;
+    ctx.lineWidth = 1.6;
+    roundedRect(ctx, x + 13, top + 20, 4, 9, 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#ff8a3d";
+    for (const mx of [x + 22, x + 30]) {
+      roundedRect(ctx, mx, top + 9, 5, 3, 1.5);
+      ctx.fill();
+    }
 
     // Wheels
     for (const wx of [x + 22, x + width - 22]) {
