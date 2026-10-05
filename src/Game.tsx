@@ -1461,8 +1461,8 @@ function drawObstacle(ctx: CanvasRenderingContext2D, obstacle: Obstacle) {
 }
 
 // Skate tricks: each jump picks one at random; riding sometimes pops a manual.
-type SkateTrick = "ollie" | "kickflip" | "shuvit" | "grab" | "spin";
-const SKATE_TRICKS: SkateTrick[] = ["ollie", "kickflip", "shuvit", "grab", "spin"];
+type SkateTrick = "ollie" | "kickflip" | "shuvit" | "grab";
+const SKATE_TRICKS: SkateTrick[] = ["ollie", "kickflip", "shuvit", "grab"];
 const TRICK_SECONDS = 0.55;
 const skateTrick = { wasGrounded: true, start: 0, trick: "ollie" as SkateTrick };
 if (__DEBUG__) (window as unknown as { __skateTrick: typeof skateTrick }).__skateTrick = skateTrick;
@@ -1539,12 +1539,6 @@ function drawPlayer(
   const trickArc = Math.sin(trickT * Math.PI); // 0 -> 1 -> 0 over the trick
   // Manual: every few seconds on the ground, ride on the back wheels briefly
   const manual = !airborne && !player.sliding && state.elapsed % 6 > 5.15;
-  // 360 spin: rider and board rotate together around their middle
-  if (trick === "spin") {
-    ctx.translate(76, H / 2);
-    ctx.rotate(-trickT * Math.PI * 2);
-    ctx.translate(-76, -H / 2);
-  }
 
   // ---- Skateboard ----
   // Ollie: nose tips up while rising, levels out on the way down.
@@ -1613,6 +1607,7 @@ function drawPlayer(
 
   // ---- Rider (chibi) ----
   const blink = state.elapsed % 3.4 < 0.13;
+  const HEAD_RADIUS = 28; // same size standing and sliding
   const drawFace = (hx: number, hy: number, r: number, squint: boolean) => {
     ctx.fillStyle = "#4a3426";
     ctx.beginPath();
@@ -1763,15 +1758,15 @@ function drawPlayer(
     drawShoe(99, H - 21);
     drawKeyboardOnBack(70, H - 62, -0.12);
     ctx.fillStyle = ink;
-    roundedRect(ctx, 62, H - 58, 32, 26, 11);
+    roundedRect(ctx, 60, H - 56, 30, 24, 12);
     ctx.fill();
     drawStrap(66, H - 56, 90, H - 36);
-    drawLimb(ink, 7, [[84, H - 46], [104, H - 30], [108, H - 20]]);
+    drawLimb(ink, 7, [[80, H - 44], [88, H - 31], [90, H - 22]]);
     ctx.fillStyle = skin;
     ctx.beginPath();
-    ctx.arc(108, H - 20, 4.5, 0, Math.PI * 2);
+    ctx.arc(90, H - 21, 5.5, 0, Math.PI * 2);
     ctx.fill();
-    drawFace(98, H - 58, 23, true);
+    drawFace(104, H - 50, HEAD_RADIUS, true);
   } else {
     const sway = Math.sin(state.elapsed * 6) * 4;
     const tuck = airborne ? (trick === "kickflip" || trick === "shuvit" ? 16 : 8) : 0;
@@ -1804,7 +1799,7 @@ function drawPlayer(
     ctx.moveTo(handX + 5.5, handY);
     ctx.arc(handX, handY, 5.5, 0, Math.PI * 2);
     ctx.fill();
-    drawFace(76, H - 106, 31, airborne && player.velocityY < 0);
+    drawFace(76, H - 104, HEAD_RADIUS, airborne && player.velocityY < 0);
   }
 
   ctx.restore();
