@@ -1470,7 +1470,12 @@ function drawPlayer(
   const bounce = player.grounded ? Math.sin(state.elapsed * 15) * 2 : 0;
   const x = player.x;
   const y = player.y + bounce;
+  const H = player.height;
   const wheelAngle = state.scroll * 0.06;
+  const gold = "#f5b21f";
+  const goldDark = "#c98a0c";
+  const ink = "#23272d";
+  const skin = "#ffd9bd";
 
   if (player.shield > 0) {
     const pulse = 0.5 + Math.sin(state.elapsed * 9) * 0.3;
@@ -1492,117 +1497,270 @@ function drawPlayer(
   ctx.save();
   ctx.translate(x, y);
   if (!player.grounded) ctx.rotate(-0.06);
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
 
+  // Ground shadow
   ctx.fillStyle = "rgba(0,0,0,.22)";
   ctx.beginPath();
-  ctx.ellipse(78, player.height + 7 - bounce, 78, 11, 0, 0, Math.PI * 2);
+  ctx.ellipse(76, H + 7 - bounce, 72, 10, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  if (player.sliding) {
-    ctx.fillStyle = "#23272d";
-    roundedRect(ctx, 36, 18, 86, 35, 14);
-    ctx.fill();
-    ctx.fillStyle = "#f5b21f";
-    roundedRect(ctx, 12, 23, 46, 34, 7);
-    ctx.fill();
-    ctx.fillStyle = "#ffcfaa";
-    ctx.beginPath();
-    ctx.arc(126, 26, 16, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#f5b21f";
-    ctx.beginPath();
-    ctx.arc(123, 20, 18, Math.PI, Math.PI * 2);
-    ctx.fill();
-  } else {
-    // Keyboard box on the rider's back
-    ctx.fillStyle = "#f5b21f";
-    roundedRect(ctx, 12, 18, 48, 49, 7);
-    ctx.fill();
-    ctx.fillStyle = "#1b1d22";
-    roundedRect(ctx, 18, 34, 36, 17, 3);
-    ctx.fill();
-    ctx.fillStyle = "#f5f5f2";
-    for (let key = 0; key < 4; key += 1) {
-      ctx.fillRect(21 + key * 8, 37, 6, 4);
-      ctx.fillRect(21 + key * 8, 44, 6, 4);
-    }
-
-    ctx.strokeStyle = "#15181c";
-    ctx.lineWidth = 13;
-    ctx.lineCap = "round";
-    ctx.beginPath();
-    ctx.moveTo(75, 60);
-    ctx.lineTo(99, 87);
-    ctx.lineTo(118, 85);
-    ctx.stroke();
-
-    ctx.fillStyle = "#23272d";
-    roundedRect(ctx, 53, 32, 52, 48, 16);
-    ctx.fill();
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "900 13px Arial";
-    ctx.fillText("PAX", 66, 60);
-
-    ctx.fillStyle = "#ffcfaa";
-    ctx.beginPath();
-    ctx.arc(83, 22, 19, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#243943";
-    ctx.beginPath();
-    ctx.arc(90, 20, 2.5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "#243943";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(87, 25, 7, 0.15, 1.2);
-    ctx.stroke();
-    ctx.fillStyle = "#f5b21f";
-    ctx.beginPath();
-    ctx.arc(80, 16, 21, Math.PI, Math.PI * 2);
-    ctx.fill();
-    ctx.fillRect(58, 14, 23, 6);
-  }
-
-  ctx.strokeStyle = "#23272d";
-  ctx.lineWidth = 9;
-  ctx.lineCap = "round";
-  ctx.beginPath();
-  ctx.moveTo(112, player.height - 38);
-  ctx.lineTo(128, player.height - 65);
-  ctx.lineTo(138, player.height - 65);
-  ctx.stroke();
-
-  ctx.fillStyle = "#f5b21f";
-  roundedRect(ctx, 35, player.height - 42, 82, 27, 12);
-  ctx.fill();
-  ctx.fillStyle = "#23272d";
-  roundedRect(ctx, 56, player.height - 58, 52, 20, 7);
-  ctx.fill();
-
-  for (const wx of [48, 117]) {
-    ctx.save();
-    ctx.translate(wx, player.height - 5);
-    ctx.rotate(wheelAngle);
-    ctx.fillStyle = "#192b35";
-    ctx.beginPath();
-    ctx.arc(0, 0, 17, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "#f7f2df";
+  // Speed lines while riding
+  if (player.grounded) {
+    ctx.strokeStyle = "rgba(255,255,255,.7)";
     ctx.lineWidth = 3;
-    for (let spoke = 0; spoke < 4; spoke += 1) {
-      ctx.rotate(Math.PI / 2);
+    for (let line = 0; line < 3; line += 1) {
+      const drift = (state.elapsed * 160 + line * 23) % 26;
+      const ly = H - 56 + line * 14;
       ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(0, 11);
+      ctx.moveTo(-6 - drift, ly);
+      ctx.lineTo(-20 - drift, ly);
       ctx.stroke();
     }
+  }
+
+  // ---- Scooter (round Vespa-style, PAX gold) ----
+  // Keyboard box on the rear rack
+  ctx.strokeStyle = "#3a3f48";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(4, H - 54);
+  ctx.lineTo(30, H - 54);
+  ctx.stroke();
+  ctx.fillStyle = ink;
+  roundedRect(ctx, 2, H - 84, 34, 28, 6);
+  ctx.fill();
+  const capColors = ["#f5b21f", "#8eddf1", "#f5f5f2", "#f5f5f2", "#e23b3b", "#f5f5f2"];
+  capColors.forEach((color, index) => {
+    ctx.fillStyle = color;
+    roundedRect(ctx, 6 + (index % 3) * 10, H - 79 + Math.floor(index / 3) * 10, 8, 8, 2);
+    ctx.fill();
+  });
+
+  // Cartoon outline so the gold scooter stands out from the gold pavement
+  const outline = () => {
+    ctx.strokeStyle = "#1b1d22";
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  };
+
+  // Rear cowl
+  ctx.fillStyle = gold;
+  ctx.beginPath();
+  ctx.ellipse(46, H - 32, 36, 21, 0, 0, Math.PI * 2);
+  ctx.fill();
+  outline();
+  ctx.fillStyle = "rgba(255,255,255,.45)";
+  ctx.beginPath();
+  ctx.ellipse(32, H - 41, 12, 5, -0.3, 0, Math.PI * 2);
+  ctx.fill();
+  // Keychron "K" sticker
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.arc(56, H - 30, 7, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = ink;
+  ctx.font = "900 10px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText("K", 56, H - 26);
+  ctx.textAlign = "left";
+
+  // Floorboard
+  ctx.fillStyle = "#3a3f48";
+  roundedRect(ctx, 58, H - 26, 48, 9, 4);
+  ctx.fill();
+
+  // Seat
+  ctx.fillStyle = "#3a3f48";
+  roundedRect(ctx, 22, H - 58, 50, 11, 6);
+  ctx.fill();
+
+  // Leg shield + steering column
+  ctx.fillStyle = gold;
+  ctx.beginPath();
+  ctx.moveTo(98, H - 20);
+  ctx.quadraticCurveTo(100, H - 64, 116, H - 76);
+  ctx.lineTo(128, H - 70);
+  ctx.quadraticCurveTo(114, H - 56, 118, H - 20);
+  ctx.closePath();
+  ctx.fill();
+  outline();
+  ctx.fillStyle = goldDark;
+  ctx.fillRect(106, H - 40, 8, 3);
+
+  // Front fender
+  ctx.fillStyle = gold;
+  ctx.beginPath();
+  ctx.ellipse(122, H - 20, 20, 11, 0, Math.PI, Math.PI * 2);
+  ctx.fill();
+  outline();
+
+  // Handlebar + big round headlight
+  ctx.strokeStyle = ink;
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(112, H - 80);
+  ctx.lineTo(128, H - 84);
+  ctx.stroke();
+  ctx.fillStyle = "rgba(255,240,170,.35)";
+  ctx.beginPath();
+  ctx.arc(130, H - 72, 13, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#fff6c8";
+  ctx.strokeStyle = goldDark;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(130, H - 72, 8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Wheels
+  for (const wx of [36, 122]) {
+    ctx.save();
+    ctx.translate(wx, H - 12);
+    ctx.rotate(wheelAngle);
+    ctx.fillStyle = "#1b1d22";
+    ctx.beginPath();
+    ctx.arc(0, 0, 14, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#cfd4d9";
+    ctx.beginPath();
+    ctx.arc(0, 0, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#1b1d22";
+    ctx.fillRect(-1.5, -6, 3, 4);
     ctx.restore();
   }
 
-  ctx.fillStyle = "#ffd84e";
-  ctx.beginPath();
-  ctx.arc(140, player.height - 48, 8, 0, Math.PI * 2);
-  ctx.fill();
+  // ---- Rider (chibi) ----
+  const blink = state.elapsed % 3.4 < 0.13;
+  const drawFace = (hx: number, hy: number, r: number, squint: boolean) => {
+    // Hair peeking out at the back
+    ctx.fillStyle = "#4a3426";
+    ctx.beginPath();
+    ctx.arc(hx - r * 0.55, hy + r * 0.15, r * 0.42, 0, Math.PI * 2);
+    ctx.fill();
+    // Face
+    ctx.fillStyle = skin;
+    ctx.beginPath();
+    ctx.arc(hx, hy, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#1b1d22";
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    // Helmet dome with gold stripe and K badge
+    ctx.fillStyle = ink;
+    ctx.beginPath();
+    ctx.arc(hx, hy - 1, r + 3, Math.PI * 0.98, Math.PI * 2.02);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = gold;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(hx, hy - 1, r - 4, Math.PI * 1.15, Math.PI * 1.85);
+    ctx.stroke();
+    ctx.fillStyle = gold;
+    ctx.beginPath();
+    ctx.arc(hx - r * 0.45, hy - r * 0.45, r * 0.24, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = ink;
+    ctx.font = `900 ${Math.round(r * 0.34)}px Arial`;
+    ctx.textAlign = "center";
+    ctx.fillText("K", hx - r * 0.45, hy - r * 0.33);
+    ctx.textAlign = "left";
+    // Cheeks
+    ctx.fillStyle = "rgba(255,120,140,.5)";
+    ctx.beginPath();
+    ctx.arc(hx + r * 0.02, hy + r * 0.42, r * 0.17, 0, Math.PI * 2);
+    ctx.arc(hx + r * 0.86, hy + r * 0.38, r * 0.15, 0, Math.PI * 2);
+    ctx.fill();
+    // Eyes
+    const eyes = [hx + r * 0.3, hx + r * 0.72];
+    ctx.strokeStyle = "#1b1d22";
+    ctx.fillStyle = "#1b1d22";
+    ctx.lineWidth = 2.5;
+    for (const ex of eyes) {
+      const ey = hy + r * 0.1;
+      if (squint) {
+        ctx.beginPath();
+        ctx.moveTo(ex - 3.5, ey - 3);
+        ctx.lineTo(ex + 1.5, ey);
+        ctx.lineTo(ex - 3.5, ey + 3);
+        ctx.stroke();
+      } else if (blink) {
+        ctx.beginPath();
+        ctx.moveTo(ex - 3.5, ey);
+        ctx.lineTo(ex + 3.5, ey);
+        ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.ellipse(ex, ey, r * 0.13, r * 0.19, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.arc(ex + r * 0.04, ey - r * 0.07, r * 0.06, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#1b1d22";
+      }
+    }
+    // Smile
+    ctx.strokeStyle = "#7a3b2e";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(hx + r * 0.5, hy + r * 0.38, r * 0.16, 0.15 * Math.PI, 0.85 * Math.PI);
+    ctx.stroke();
+  };
+
+  if (player.sliding) {
+    // Ducked low over the handlebar
+    ctx.fillStyle = ink;
+    roundedRect(ctx, 46, H - 62, 52, 22, 11);
+    ctx.fill();
+    ctx.strokeStyle = ink;
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.moveTo(90, H - 54);
+    ctx.lineTo(114, H - 80);
+    ctx.stroke();
+    drawFace(98, H - 60, 20, true);
+  } else {
+    // Legs + gold sneaker
+    ctx.strokeStyle = "#3d5a80";
+    ctx.lineWidth = 11;
+    ctx.beginPath();
+    ctx.moveTo(62, H - 54);
+    ctx.lineTo(80, H - 48);
+    ctx.lineTo(86, H - 30);
+    ctx.stroke();
+    ctx.fillStyle = gold;
+    ctx.beginPath();
+    ctx.ellipse(90, H - 27, 9, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Hoodie body
+    ctx.fillStyle = ink;
+    roundedRect(ctx, 48, H - 86, 32, 36, 12);
+    ctx.fill();
+    ctx.fillStyle = gold;
+    ctx.font = "900 9px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("PAX", 64, H - 64);
+    ctx.textAlign = "left";
+    // Arm to the handlebar
+    ctx.strokeStyle = ink;
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.moveTo(70, H - 76);
+    ctx.lineTo(112, H - 82);
+    ctx.stroke();
+    ctx.fillStyle = skin;
+    ctx.beginPath();
+    ctx.arc(113, H - 82, 5, 0, Math.PI * 2);
+    ctx.fill();
+    // Big head
+    drawFace(68, H - 100, 26, !player.grounded && player.velocityY < 0);
+  }
+
   ctx.restore();
 }
 
