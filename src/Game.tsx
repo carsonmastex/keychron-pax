@@ -1519,146 +1519,152 @@ function drawObstacle(ctx: CanvasRenderingContext2D, obstacle: Obstacle) {
   }
 
   if (obstacle.kind === "truck") {
-    // Chubby little Keychron delivery truck driving towards the rider (cab on the left)
+    // Light box truck in the cute style: low cab-over cab (front third),
+    // tall cargo box on a chassis (back two thirds), big wheels.
     const t = performance.now() / 1000;
     const outline = "#1b1d22";
-    const bob = Math.abs(Math.sin(t * 9 + obstacle.id)) * 1.5;
-    const top = y + bob;
-    const bottom = y + height - 10;
-    ctx.lineJoin = "round";
-    ctx.lineCap = "round";
     ctx.fillStyle = "rgba(0,0,0,.2)";
     ctx.beginPath();
-    ctx.ellipse(x + width / 2, GROUND_Y + 3, width * 0.55, 7, 0, 0, Math.PI * 2);
+    ctx.ellipse(x + width / 2, GROUND_Y + 3, width * 0.55, 8, 0, 0, Math.PI * 2);
     ctx.fill();
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(width / 108, height / 72);
+    {
+    // Local drawing space: 108 x 72
+    const x = 0;
+    const y = 0;
+    const width = 108;
+    const height = 72;
+    const bob = Math.abs(Math.sin(t * 9 + obstacle.id)) * 1.2;
+    const wheelR = 12;
+    const groundY = y + height;
+    const axleY = groundY - wheelR;
+    const chassisY = axleY - 6 + bob; // top of the chassis rail
+    const boxX = x + 40;
+    const boxRight = x + width - 2;
+    const boxTop = y + 2 + bob;
+    const cabTop = y + 22 + bob;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
 
-    // Cargo box with the Keychron logo and a little keyboard
-    const boxX = x + 38;
-    ctx.fillStyle = "#f7f7f4";
+    // Chassis rail
+    ctx.fillStyle = "#3b4048";
     ctx.strokeStyle = outline;
+    ctx.lineWidth = 2;
+    roundedRect(ctx, x + 6, chassisY, width - 10, 7, 3);
+    ctx.fill();
+    ctx.stroke();
+
+    // Cargo box
+    ctx.fillStyle = "#f7f7f4";
     ctx.lineWidth = 2.5;
-    roundedRect(ctx, boxX, top, width - 38, bottom - top, 9);
+    roundedRect(ctx, boxX, boxTop, boxRight - boxX, chassisY - boxTop, 6);
     ctx.fill();
     ctx.stroke();
     ctx.fillStyle = "#f5b21f";
-    ctx.fillRect(boxX + 2, bottom - 12, width - 42, 6);
+    ctx.fillRect(boxX + 2, chassisY - 9, boxRight - boxX - 4, 5);
     ctx.fillStyle = outline;
     ctx.font = "900 10px Arial";
     ctx.textAlign = "center";
-    ctx.fillText("KEYCHRON", boxX + (width - 38) / 2, top + 16);
+    const boxMid = (boxX + boxRight) / 2;
+    ctx.fillText("KEYCHRON", boxMid, boxTop + 15);
     ctx.textAlign = "left";
     ctx.fillStyle = "#3b4048";
-    roundedRect(ctx, boxX + 12, top + 24, width - 62, 16, 3);
+    roundedRect(ctx, boxMid - 22, boxTop + 21, 44, 15, 3);
     ctx.fill();
-    ctx.fillStyle = "#d8dde0";
     for (let row = 0; row < 2; row += 1) {
       for (let col = 0; col < 7; col += 1) {
         ctx.fillStyle = row === 0 && col === 0 ? "#f5b21f" : row === 1 && col === 6 ? "#8eddf1" : "#d8dde0";
-        ctx.fillRect(boxX + 15 + col * 6.2, top + 27 + row * 6, 4.6, 4);
+        ctx.fillRect(boxMid - 20 + col * 5.9, boxTop + 24 + row * 5.6, 4.4, 3.8);
       }
     }
 
-    // Cab: rounded nose with a big windscreen
+    // Cab (cab-over): rounded front, big windscreen, door, mirror
     ctx.fillStyle = "#f5b21f";
     ctx.strokeStyle = outline;
     ctx.lineWidth = 2.5;
     ctx.beginPath();
-    ctx.moveTo(boxX + 4, top + 12);
-    ctx.lineTo(x + 20, top + 12);
-    ctx.quadraticCurveTo(x + 4, top + 14, x + 2, top + 34);
-    ctx.lineTo(x + 2, bottom - 4);
-    ctx.quadraticCurveTo(x + 2, bottom, x + 6, bottom);
-    ctx.lineTo(boxX + 4, bottom);
+    ctx.moveTo(boxX + 3, cabTop);
+    ctx.lineTo(x + 14, cabTop);
+    ctx.quadraticCurveTo(x + 2, cabTop + 1, x + 2, cabTop + 13);
+    ctx.lineTo(x + 2, chassisY + 4);
+    ctx.lineTo(boxX + 3, chassisY + 4);
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
+    // Windscreen + side window
     ctx.fillStyle = "#bfe9f5";
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(x + 21, top + 17);
-    ctx.lineTo(boxX - 2, top + 17);
-    ctx.lineTo(boxX - 2, top + 32);
-    ctx.lineTo(x + 9, top + 32);
-    ctx.quadraticCurveTo(x + 10, top + 19, x + 21, top + 17);
+    ctx.moveTo(x + 15, cabTop + 4);
+    ctx.lineTo(boxX - 2, cabTop + 4);
+    ctx.lineTo(boxX - 2, cabTop + 17);
+    ctx.lineTo(x + 6, cabTop + 17);
+    ctx.quadraticCurveTo(x + 6, cabTop + 5, x + 15, cabTop + 4);
     ctx.closePath();
     ctx.fill();
-    ctx.lineWidth = 2;
     ctx.stroke();
     ctx.strokeStyle = "rgba(255,255,255,.9)";
-    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(x + 18, top + 21);
-    ctx.lineTo(x + 24, top + 21);
+    ctx.moveTo(x + 13, cabTop + 8);
+    ctx.lineTo(x + 19, cabTop + 8);
     ctx.stroke();
-
-    // Front end: grille, round headlights, bumper
-    ctx.fillStyle = "#3b4048";
-    ctx.strokeStyle = outline;
-    ctx.lineWidth = 2;
-    roundedRect(ctx, x + 3, top + 38, 9, 16, 3);
-    ctx.fill();
-    ctx.stroke();
-    ctx.strokeStyle = "#9aa3ab";
-    ctx.lineWidth = 1.4;
-    for (let bar = 0; bar < 3; bar += 1) {
-      ctx.beginPath();
-      ctx.moveTo(x + 5, top + 42 + bar * 4);
-      ctx.lineTo(x + 10, top + 42 + bar * 4);
-      ctx.stroke();
-    }
-    ctx.fillStyle = "#fff6c8";
-    ctx.strokeStyle = outline;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(x + 8, top + 33, 4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = "#ff8a3d";
-    ctx.beginPath();
-    ctx.arc(x + 8, bottom - 10, 2.2, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#cfd4d9";
-    roundedRect(ctx, x - 2, bottom - 7, 18, 6, 3);
-    ctx.fill();
-    ctx.stroke();
-    // Door with handle, side mirror, roof marker lights
+    // Door with handle
     ctx.strokeStyle = "rgba(27,29,34,.5)";
     ctx.lineWidth = 1.6;
-    roundedRect(ctx, x + 17, top + 34, boxX - x - 21, bottom - top - 40, 3);
+    roundedRect(ctx, x + 18, cabTop + 19, boxX - x - 22, chassisY - cabTop - 18, 3);
     ctx.stroke();
     ctx.fillStyle = "#3b4048";
-    ctx.fillRect(x + 21, top + 39, 6, 2.4);
+    ctx.fillRect(x + 22, cabTop + 23, 6, 2.4);
+    // Mirror
     ctx.fillStyle = "#3b4048";
     ctx.strokeStyle = outline;
     ctx.lineWidth = 1.6;
-    roundedRect(ctx, x + 13, top + 20, 4, 9, 2);
+    roundedRect(ctx, x + 13, cabTop + 7, 3.5, 8, 1.5);
+    ctx.fill();
+    ctx.stroke();
+    // Front: grille, headlight, indicator, bumper
+    ctx.fillStyle = "#3b4048";
+    ctx.lineWidth = 2;
+    roundedRect(ctx, x + 3, cabTop + 21, 7, 9, 2.5);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#fff6c8";
+    ctx.beginPath();
+    ctx.arc(x + 7, cabTop + 35, 3.6, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
     ctx.fillStyle = "#ff8a3d";
-    for (const mx of [x + 22, x + 30]) {
-      roundedRect(ctx, mx, top + 9, 5, 3, 1.5);
-      ctx.fill();
-    }
+    roundedRect(ctx, x + 3, cabTop + 18, 4, 2.6, 1.3);
+    ctx.fill();
+    ctx.fillStyle = "#cfd4d9";
+    roundedRect(ctx, x - 2, chassisY + 1, 16, 6, 3);
+    ctx.fill();
+    ctx.stroke();
 
-    // Wheels
-    for (const wx of [x + 22, x + width - 22]) {
+    // Wheels (front under the cab, rear under the box)
+    for (const wx of [x + 22, x + width - 24]) {
       ctx.save();
-      ctx.translate(wx, bottom + 1);
+      ctx.translate(wx, axleY);
       ctx.rotate(-t * 12);
       ctx.fillStyle = "#23272d";
       ctx.beginPath();
-      ctx.arc(0, 0, 10, 0, Math.PI * 2);
+      ctx.arc(0, 0, wheelR, 0, Math.PI * 2);
       ctx.fill();
       ctx.strokeStyle = outline;
       ctx.lineWidth = 2;
       ctx.stroke();
       ctx.fillStyle = "#cfd4d9";
       ctx.beginPath();
-      ctx.arc(0, 0, 4.5, 0, Math.PI * 2);
+      ctx.arc(0, 0, wheelR * 0.45, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = "#23272d";
-      ctx.fillRect(-1, -4.5, 2, 3);
+      ctx.fillRect(-1, -wheelR * 0.45, 2, 3);
       ctx.restore();
     }
+    }
+    ctx.restore();
   }
   ctx.restore();
 }
@@ -3296,7 +3302,8 @@ function PizzaDashGame() {
         // jumping rider hits it, only sliding gets under.
         banner: { w: 170, h: GROUND_Y - 92, y: 0 },
         drone: { w: 92, h: 36, y: GROUND_Y - 128 },
-        truck: { w: 108, h: 72, y: GROUND_Y - 72 },
+        // Drawn at 108x72 and scaled up so it is about as big as the plane
+        truck: { w: 150, h: 100, y: GROUND_Y - 100 },
       };
       const spec = specs[kind];
       const spawnX = WORLD_WIDTH + 50;
