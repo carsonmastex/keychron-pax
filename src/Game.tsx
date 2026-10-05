@@ -1648,19 +1648,49 @@ function drawPlayer(
   };
 
   // Keyboard backpack with colourful keycaps
-  const drawBackpack = (bx: number, by: number) => {
-    ctx.fillStyle = ink;
-    roundedRect(ctx, bx, by, 26, 32, 7);
+  // A full Keychron keyboard slung across the rider's back
+  const drawKeyboardOnBack = (cx: number, cy: number, angle: number) => {
+    const w = 66;
+    const h = 24;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(angle);
+    // Case
+    ctx.fillStyle = "#3b4048";
+    roundedRect(ctx, -w / 2, -h / 2, w, h, 5);
     ctx.fill();
     ctx.strokeStyle = line;
     ctx.lineWidth = 2.5;
     ctx.stroke();
-    const caps = ["#f5b21f", "#8eddf1", "#f5f5f2", "#e23b3b", "#f5f5f2", "#f5b21f"];
-    caps.forEach((color, index) => {
-      ctx.fillStyle = color;
-      roundedRect(ctx, bx + 4 + (index % 2) * 10, by + 4 + Math.floor(index / 2) * 9, 8, 7, 2);
-      ctx.fill();
-    });
+    ctx.fillStyle = ink;
+    roundedRect(ctx, -w / 2 + 3, -h / 2 + 3, w - 6, h - 6, 3);
+    ctx.fill();
+    // Keys: 3 rows, gold Esc, cyan Enter, long space bar
+    const cols = 9;
+    const keyW = (w - 10) / cols;
+    const keyH = (h - 10) / 3;
+    for (let row = 0; row < 3; row += 1) {
+      for (let col = 0; col < cols; col += 1) {
+        if (row === 2 && col > 2 && col < 7) continue;
+        ctx.fillStyle =
+          row === 0 && col === 0 ? gold : row === 1 && col === cols - 1 ? "#8eddf1" : "#d8dde0";
+        roundedRect(ctx, -w / 2 + 5 + col * keyW + 0.6, -h / 2 + 5 + row * keyH + 0.6, keyW - 1.2, keyH - 1.2, 1);
+        ctx.fill();
+      }
+    }
+    ctx.fillStyle = "#d8dde0";
+    roundedRect(ctx, -w / 2 + 5 + 3 * keyW + 0.6, -h / 2 + 5 + 2 * keyH + 0.6, keyW * 4 - 1.2, keyH - 1.2, 1);
+    ctx.fill();
+    ctx.restore();
+  };
+  // Gold strap across the hoodie holding the keyboard on
+  const drawStrap = (x1: number, y1: number, x2: number, y2: number) => {
+    ctx.strokeStyle = gold;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
   };
 
   const drawLimb = (color: string, width: number, points: [number, number][]) => {
@@ -1687,10 +1717,11 @@ function drawPlayer(
     drawLimb(denim, 10, [[80, H - 36], [96, H - 36], [98, H - 22]]);
     drawShoe(54, H - 21);
     drawShoe(99, H - 21);
-    drawBackpack(46, H - 70);
+    drawKeyboardOnBack(70, H - 62, -0.12);
     ctx.fillStyle = ink;
     roundedRect(ctx, 62, H - 58, 32, 26, 11);
     ctx.fill();
+    drawStrap(66, H - 56, 90, H - 36);
     drawLimb(ink, 7, [[84, H - 46], [104, H - 30], [108, H - 20]]);
     ctx.fillStyle = skin;
     ctx.beginPath();
@@ -1705,13 +1736,14 @@ function drawPlayer(
     drawLimb(denim, 11, [[78, H - 50], [92, H - 38 - tuck], [100, H - 24 - tuck * 0.4]]);
     drawShoe(51, H - 22 - tuck * 0.4);
     drawShoe(101, H - 22 - tuck * 0.4);
-    drawBackpack(32, H - 92);
+    drawKeyboardOnBack(50, H - 78, -1.05);
     // Back arm out for balance
     drawLimb(ink, 8, [[64, H - 78], [44, H - 64 + sway], [26, H - 68 + sway]]);
     // Hoodie body
     ctx.fillStyle = ink;
     roundedRect(ctx, 56, H - 86, 32, 38, 12);
     ctx.fill();
+    drawStrap(58, H - 82, 64, H - 50);
     ctx.fillStyle = gold;
     ctx.font = "900 9px Arial";
     ctx.textAlign = "center";
