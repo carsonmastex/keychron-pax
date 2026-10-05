@@ -22,14 +22,12 @@ const GROUND_Y = 570;
 
 // Booth difficulty: runs should last about a minute so the queue keeps moving.
 // (Original Taiwan values in brackets.)
-// Carson (2026-10-05): start at the Taiwan speed, then speed up faster than
-// Taiwan (+0.25 every 50 m vs Taiwan's ~+0.104): 30 s 7.8, 60 s 9.3, 120 s 13.6.
-// [Taiwan values in brackets]
-const START_SPEED = 6.6; // [6.6]
-const MAX_SPEED = 16; // [14.8]
-// Speed goes up in steps: +SPEED_STEP every SPEED_STEP_METRES.
-// [Taiwan: smooth +1 every 480 m]
-const SPEED_STEP = 0.25; // [0.104 per 50 m]
+// Carson (2026-10-05): start at 7.7, add 10% of the start speed every 50 m
+// (by distance, not time), reaching top speed at 1000 m: 7.7 + 20 x 0.77 = 23.1.
+// [Taiwan: start 6.6, smooth +1 every 480 m, max 14.8]
+const START_SPEED = 7.7;
+const SPEED_STEP = START_SPEED * 0.1;
+const MAX_SPEED = START_SPEED + SPEED_STEP * 20; // 23.1 at 1000 m
 const SPEED_STEP_METRES = 50;
 // Obstacle density unchanged from the earlier booth tuning (boss asked only for speed)
 const OBSTACLE_GAP_BASE = 1.15; // seconds between obstacles at the start [1.72]
