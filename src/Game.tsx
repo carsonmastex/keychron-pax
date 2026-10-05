@@ -1460,6 +1460,13 @@ function drawObstacle(ctx: CanvasRenderingContext2D, obstacle: Obstacle) {
   ctx.restore();
 }
 
+// Skate tricks: each jump picks one at random; riding sometimes pops a manual.
+type SkateTrick = "ollie" | "kickflip" | "shuvit" | "grab" | "spin";
+const SKATE_TRICKS: SkateTrick[] = ["ollie", "kickflip", "shuvit", "grab", "spin"];
+const TRICK_SECONDS = 0.55;
+const skateTrick = { wasGrounded: true, start: 0, trick: "ollie" as SkateTrick };
+if (__DEBUG__) (window as unknown as { __skateTrick: typeof skateTrick }).__skateTrick = skateTrick;
+
 function drawPlayer(
   ctx: CanvasRenderingContext2D,
   state: GameState,
@@ -1521,13 +1528,46 @@ function drawPlayer(
     }
   }
 
+  // ---- Tricks ----
+  if (skateTrick.wasGrounded && airborne) {
+    skateTrick.start = state.elapsed;
+    skateTrick.trick = SKATE_TRICKS[Math.floor(Math.random() * SKATE_TRICKS.length)];
+  }
+  skateTrick.wasGrounded = !airborne;
+  const trick: SkateTrick | null = airborne ? skateTrick.trick : null;
+  const trickT = clamp((state.elapsed - skateTrick.start) / TRICK_SECONDS, 0, 1);
+  const trickArc = Math.sin(trickT * Math.PI); // 0 -> 1 -> 0 over the trick
+  // Manual: every few seconds on the ground, ride on the back wheels briefly
+  const manual = !airborne && !player.sliding && state.elapsed % 6 > 5.15;
+  // 360 spin: rider and board rotate together around their middle
+  if (trick === "spin") {
+    ctx.translate(76, H / 2);
+    ctx.rotate(-trickT * Math.PI * 2);
+    ctx.translate(-76, -H / 2);
+  }
+
   // ---- Skateboard ----
   // Ollie: nose tips up while rising, levels out on the way down.
-  const boardTilt = airborne ? clamp(player.velocityY / 2600, -0.32, 0.1) : 0;
-  const boardY = H - 16;
+  let boardTilt = airborne ? clamp(player.velocityY / 2600, -0.32, 0.1) : 0;
+  if (trick === "grab") boardTilt -= 0.2 * trickArc;
+  if (manual) boardTilt = -0.14;
+  const boardY = H - 16 - (manual ? 4 : 0);
   ctx.save();
   ctx.translate(76, boardY);
   ctx.rotate(boardTilt);
+  if (trick === "kickflip") {
+    // Flip along the board's length: squash vertically through a full turn
+    ctx.translate(0, -trickArc * 12);
+    const flip = Math.cos(trickT * Math.PI * 2);
+    ctx.scale(1, Math.abs(flip) < 0.05 ? 0.05 * Math.sign(flip || 1) : flip);
+  } else if (trick === "shuvit") {
+    // 360 shove-it: board spins flat under the feet
+    ctx.translate(0, -trickArc * 9);
+    const spin = Math.cos(trickT * Math.PI * 2);
+    ctx.scale(Math.abs(spin) < 0.05 ? 0.05 * Math.sign(spin || 1) : spin, 1);
+  } else if (trick === "grab") {
+    ctx.translate(0, -trickArc * 6);
+  }
   // Deck with kicked-up nose and tail
   ctx.fillStyle = gold;
   ctx.beginPath();
@@ -1606,35 +1646,39 @@ function drawPlayer(
     ctx.fillText("K", hx - r * 0.45, hy - r * 0.33);
     ctx.textAlign = "left";
     // Cheeks
-    ctx.fillStyle = "rgba(255,120,140,.5)";
+    ctx.fillStyle = "rgba(255,120,140,.55)";
     ctx.beginPath();
-    ctx.arc(hx + r * 0.02, hy + r * 0.42, r * 0.17, 0, Math.PI * 2);
-    ctx.arc(hx + r * 0.86, hy + r * 0.38, r * 0.15, 0, Math.PI * 2);
+    ctx.ellipse(hx + r * 0.02, hy + r * 0.44, r * 0.21, r * 0.15, 0, 0, Math.PI * 2);
+    ctx.ellipse(hx + r * 0.88, hy + r * 0.4, r * 0.18, r * 0.13, 0, 0, Math.PI * 2);
     ctx.fill();
     // Eyes
     ctx.strokeStyle = line;
     ctx.fillStyle = line;
     ctx.lineWidth = 2.5;
-    for (const ex of [hx + r * 0.3, hx + r * 0.72]) {
-      const ey = hy + r * 0.1;
+    const e = r * 0.14; // squint / blink stroke size
+    for (const ex of [hx + r * 0.3, hx + r * 0.74]) {
+      const ey = hy + r * 0.12;
       if (squint) {
         ctx.beginPath();
-        ctx.moveTo(ex - 3.5, ey - 3);
-        ctx.lineTo(ex + 1.5, ey);
-        ctx.lineTo(ex - 3.5, ey + 3);
+        ctx.moveTo(ex - e, ey - e * 0.9);
+        ctx.lineTo(ex + e * 0.4, ey);
+        ctx.lineTo(ex - e, ey + e * 0.9);
         ctx.stroke();
       } else if (blink) {
         ctx.beginPath();
-        ctx.moveTo(ex - 3.5, ey);
-        ctx.lineTo(ex + 3.5, ey);
+        ctx.arc(ex, ey - e * 0.3, e, 0.1 * Math.PI, 0.9 * Math.PI);
         ctx.stroke();
       } else {
+        // Big shiny eyes with two highlights
         ctx.beginPath();
-        ctx.ellipse(ex, ey, r * 0.13, r * 0.19, 0, 0, Math.PI * 2);
+        ctx.ellipse(ex, ey, r * 0.155, r * 0.22, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.fillStyle = "#ffffff";
         ctx.beginPath();
-        ctx.arc(ex + r * 0.04, ey - r * 0.07, r * 0.06, 0, Math.PI * 2);
+        ctx.arc(ex + r * 0.05, ey - r * 0.08, r * 0.075, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(ex - r * 0.05, ey + r * 0.09, r * 0.035, 0, Math.PI * 2);
         ctx.fill();
         ctx.fillStyle = line;
       }
@@ -1643,7 +1687,7 @@ function drawPlayer(
     ctx.strokeStyle = "#7a3b2e";
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(hx + r * 0.5, hy + r * 0.38, r * 0.16, 0.15 * Math.PI, 0.85 * Math.PI);
+    ctx.arc(hx + r * 0.52, hy + r * 0.4, r * 0.13, 0.1 * Math.PI, 0.9 * Math.PI);
     ctx.stroke();
   };
 
@@ -1727,37 +1771,40 @@ function drawPlayer(
     ctx.beginPath();
     ctx.arc(108, H - 20, 4.5, 0, Math.PI * 2);
     ctx.fill();
-    drawFace(98, H - 56, 20, true);
+    drawFace(98, H - 58, 23, true);
   } else {
     const sway = Math.sin(state.elapsed * 6) * 4;
-    const tuck = airborne ? 8 : 0;
+    const tuck = airborne ? (trick === "kickflip" || trick === "shuvit" ? 16 : 8) : 0;
     // Legs: wide skate stance, knees tuck up during an ollie
     drawLimb(denim, 11, [[68, H - 50], [56, H - 38 - tuck], [52, H - 24 - tuck * 0.4]]);
     drawLimb(denim, 11, [[78, H - 50], [92, H - 38 - tuck], [100, H - 24 - tuck * 0.4]]);
     drawShoe(51, H - 22 - tuck * 0.4);
     drawShoe(101, H - 22 - tuck * 0.4);
-    drawKeyboardOnBack(50, H - 78, -1.05);
+    drawKeyboardOnBack(50, H - 74, -1.05);
     // Back arm out for balance
-    drawLimb(ink, 8, [[64, H - 78], [44, H - 64 + sway], [26, H - 68 + sway]]);
-    // Hoodie body
+    drawLimb(ink, 8, [[64, H - 72], [46, H - 62 + sway], [32, H - 66 + sway]]);
+    // Hoodie body (small and round)
     ctx.fillStyle = ink;
-    roundedRect(ctx, 56, H - 86, 32, 38, 12);
+    roundedRect(ctx, 58, H - 80, 28, 32, 14);
     ctx.fill();
-    drawStrap(58, H - 82, 64, H - 50);
+    drawStrap(60, H - 77, 65, H - 50);
     ctx.fillStyle = gold;
-    ctx.font = "900 9px Arial";
+    ctx.font = "900 8px Arial";
     ctx.textAlign = "center";
-    ctx.fillText("PAX", 72, H - 62);
+    ctx.fillText("PAX", 73, H - 59);
     ctx.textAlign = "left";
-    // Front arm out for balance
-    drawLimb(ink, 8, [[80, H - 78], [102, H - 72 - sway], [116, H - 80 - sway]]);
+    // Front arm: out for balance, or reaching down to grab the board
+    const handX = 112;
+    const handY = trick === "grab" ? H - 34 - trickArc * 6 : H - 76 - sway;
+    if (trick === "grab") drawLimb(ink, 8, [[80, H - 72], [102, H - 56], [handX, handY]]);
+    else drawLimb(ink, 8, [[80, H - 72], [100, H - 68 - sway], [handX, handY]]);
     ctx.fillStyle = skin;
     ctx.beginPath();
-    ctx.arc(26, H - 68 + sway, 5, 0, Math.PI * 2);
-    ctx.moveTo(122, H - 80 - sway);
-    ctx.arc(117, H - 80 - sway, 5, 0, Math.PI * 2);
+    ctx.arc(32, H - 66 + sway, 5.5, 0, Math.PI * 2);
+    ctx.moveTo(handX + 5.5, handY);
+    ctx.arc(handX, handY, 5.5, 0, Math.PI * 2);
     ctx.fill();
-    drawFace(76, H - 104, 26, airborne && player.velocityY < 0);
+    drawFace(76, H - 106, 31, airborne && player.velocityY < 0);
   }
 
   ctx.restore();
