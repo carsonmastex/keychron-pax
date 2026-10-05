@@ -1,0 +1,959 @@
+
+:root {
+  /* PAX Aus gold + Keychron charcoal. Names kept from the original theme. */
+  --blue: #3a3f48;
+  --blue-dark: #1b1d22;
+  --blue-soft: #8eddf1;
+  --red: #f5b21f;
+  --red-shadow: #b57d06;
+  --on-red: #1b1d22;
+  --yellow: #ffd84e;
+  --cream: #fff8e6;
+  --ink: #1b1d22;
+  --paper: #f4efe2;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--cream);
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 12% 7%, rgba(245, 178, 31, .32), transparent 21rem),
+    linear-gradient(180deg, #fffaf0 0%, #f5eddd 100%);
+  color: var(--ink);
+  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+}
+
+button,
+kbd {
+  font: inherit;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.site-shell {
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.topbar {
+  align-items: center;
+  background: var(--blue-dark);
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  min-height: 66px;
+  padding: 10px clamp(18px, 4vw, 64px);
+}
+
+.brand-lockup,
+.topbar-actions {
+  align-items: center;
+  display: flex;
+}
+
+.brand-lockup {
+  font-size: clamp(15px, 1.6vw, 20px);
+  font-weight: 950;
+  gap: 13px;
+  letter-spacing: .04em;
+}
+
+.brand-lockup b {
+  color: var(--yellow);
+  font-size: 25px;
+}
+
+.pax-logo {
+  display: block;
+  flex: 0 0 auto;
+  height: 34px;
+  object-fit: contain;
+  width: auto;
+}
+
+.keychron-logo {
+  display: block;
+  flex: 0 0 auto;
+  filter: invert(1);
+  height: 36px;
+  object-fit: contain;
+  width: 36px;
+}
+
+.topbar-actions {
+  gap: 8px;
+}
+
+.best-score,
+.icon-button {
+  border: 1px solid rgba(255,255,255,.19);
+  border-radius: 10px;
+  color: white;
+  font-family: "Courier New", monospace;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .06em;
+  padding: 9px 12px;
+}
+
+.best-score {
+  color: var(--yellow);
+}
+
+.icon-button {
+  background: rgba(255,255,255,.07);
+  cursor: pointer;
+  transition: background .16s ease, transform .16s ease;
+}
+
+.icon-button:hover {
+  background: rgba(255,255,255,.16);
+  transform: translateY(-1px);
+}
+
+.game-heading {
+  align-items: flex-end;
+  display: flex;
+  gap: 40px;
+  justify-content: space-between;
+  margin: 0 auto;
+  max-width: 1440px;
+  padding: clamp(28px, 4vw, 54px) clamp(18px, 4vw, 64px) 25px;
+}
+
+.eyebrow,
+.section-kicker {
+  color: var(--blue);
+  font-family: "Courier New", monospace;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: .13em;
+  margin: 0 0 8px;
+}
+
+.game-heading h1 {
+  color: var(--ink);
+  font-size: clamp(48px, 7vw, 94px);
+  font-weight: 1000;
+  letter-spacing: -.075em;
+  line-height: .85;
+  margin: 0;
+}
+
+.game-heading h1 span {
+  color: var(--red);
+}
+
+.heading-copy {
+  font-size: clamp(14px, 1.6vw, 18px);
+  line-height: 1.7;
+  margin: 0;
+  max-width: 450px;
+}
+
+.game-stage {
+  background: var(--blue-dark);
+  border-radius: 28px;
+  box-shadow: 0 24px 70px rgba(27, 29, 34, .24);
+  margin: 0 auto;
+  max-width: 1440px;
+  overflow: hidden;
+  width: calc(100% - clamp(26px, 6vw, 96px));
+}
+
+.game-stage:fullscreen {
+  align-items: center;
+  background: #111317;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: none;
+  padding: 18px;
+  width: 100%;
+}
+
+.game-stage:fullscreen .screen-bezel {
+  max-height: calc(100vh - 118px);
+}
+
+.screen-bezel {
+  aspect-ratio: 16 / 9;
+  background: #111317;
+  border: 12px solid var(--blue-dark);
+  border-radius: 27px 27px 12px 12px;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.game-canvas {
+  display: block;
+  height: 100%;
+  touch-action: none;
+  width: 100%;
+}
+
+.screen-corner {
+  background: rgba(27,29,34,.88);
+  bottom: 11px;
+  color: rgba(255,255,255,.74);
+  font-family: "Courier New", monospace;
+  font-size: clamp(7px, 1.1vw, 12px);
+  font-weight: 900;
+  letter-spacing: .12em;
+  padding: 6px 9px;
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+}
+
+.corner-left { left: 12px; }
+.corner-right { right: 12px; }
+
+.result-overlay {
+  background: rgba(2, 13, 19, .2);
+  display: grid;
+  inset: 0;
+  padding: 3.2%;
+  place-items: center;
+  position: absolute;
+  z-index: 4;
+}
+
+.result-card {
+  align-items: center;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, .018) 0,
+      rgba(255, 255, 255, .018) 2px,
+      transparent 2px,
+      transparent 5px
+    ),
+    radial-gradient(circle at 50% 0%, rgba(245, 178, 31, .22), transparent 45%),
+    rgba(22, 24, 29, .97);
+  border: 4px solid rgba(255, 255, 255, .9);
+  border-radius: 4px;
+  box-shadow:
+    0 0 0 5px var(--blue),
+    0 0 0 9px #111317,
+    12px 12px 0 rgba(0, 0, 0, .38);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  font-family: "Courier New", monospace;
+  font-smooth: never;
+  height: 100%;
+  justify-content: center;
+  max-height: 700px;
+  max-width: 880px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: clamp(10px, 2.1vw, 30px);
+  width: 78%;
+}
+
+.result-card.leaderboard-card {
+  justify-content: flex-start;
+  max-width: 1120px;
+  padding: clamp(8px, 1.55vw, 22px) clamp(12px, 2vw, 28px);
+  width: 94%;
+}
+
+.result-brand-lockup {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  gap: clamp(12px, 2vw, 26px);
+  justify-content: center;
+  margin-bottom: clamp(6px, 1vw, 14px);
+}
+
+.result-brand-lockup span {
+  color: var(--yellow);
+  font-family: "Courier New", monospace;
+  font-size: clamp(18px, 2.7vw, 38px);
+  font-weight: 950;
+  text-shadow: 3px 3px 0 var(--blue);
+}
+
+.result-pax-logo,
+.result-keychron-logo {
+  height: clamp(30px, 4.2vw, 62px);
+  object-fit: contain;
+  width: clamp(30px, 4.2vw, 62px);
+}
+
+.result-keychron-logo {
+  filter: invert(1);
+}
+
+.result-pax-logo {
+  width: auto;
+}
+
+.score-entry-view {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  text-align: center;
+  width: 100%;
+}
+
+.result-kicker {
+  color: var(--blue-soft);
+  font-family: "Courier New", monospace;
+  font-size: clamp(9px, 1.08vw, 15px);
+  font-weight: 900;
+  letter-spacing: .14em;
+  margin: 0 0 clamp(3px, .5vw, 7px);
+  text-shadow: 2px 2px 0 #0b0c0f;
+}
+
+.score-entry-view h2,
+.leaderboard-heading h2 {
+  color: white;
+  font-family: "Courier New", monospace;
+  font-size: clamp(22px, 3.4vw, 48px);
+  font-weight: 1000;
+  letter-spacing: .02em;
+  line-height: 1;
+  margin: 0;
+  text-shadow:
+    3px 0 0 #111317,
+    0 3px 0 #111317,
+    3px 3px 0 var(--blue);
+}
+
+.final-score {
+  color: var(--yellow);
+  font-family: "Courier New", monospace;
+  font-size: clamp(38px, 6.7vw, 90px);
+  line-height: .95;
+  margin: clamp(5px, .9vw, 12px) 0;
+  text-shadow:
+    4px 0 0 #111317,
+    0 4px 0 #111317,
+    5px 5px 0 var(--red);
+}
+
+.result-summary {
+  color: rgba(255, 255, 255, .76);
+  font-family: "Courier New", monospace;
+  font-size: clamp(10px, 1.45vw, 19px);
+  font-weight: 900;
+  margin: 0 0 clamp(8px, 1.3vw, 18px);
+}
+
+.name-entry-form {
+  width: min(100%, 620px);
+}
+
+.name-entry-form label {
+  display: block;
+  font-family: "Courier New", monospace;
+  font-size: clamp(11px, 1.55vw, 20px);
+  font-weight: 900;
+  margin-bottom: clamp(5px, .8vw, 11px);
+}
+
+.name-entry-row {
+  display: flex;
+  gap: clamp(6px, .8vw, 10px);
+  justify-content: center;
+}
+
+.name-entry-row--spaced {
+  margin-bottom: clamp(10px, 1.6vw, 18px);
+}
+
+.name-entry-row input,
+.name-entry-row button,
+.leaderboard-actions button {
+  border: 3px solid #111317;
+  border-radius: 2px;
+  font-family: "Courier New", monospace;
+  font-weight: 900;
+  min-height: clamp(32px, 4.3vw, 56px);
+}
+
+.name-entry-row input {
+  background: white;
+  color: var(--ink);
+  flex: 1;
+  font-size: clamp(12px, 1.7vw, 22px);
+  min-width: 0;
+  outline: 3px solid transparent;
+  padding: 0 clamp(10px, 1.3vw, 18px);
+  transition: outline-color .16s ease;
+}
+
+.name-entry-row input:focus {
+  outline-color: var(--yellow);
+}
+
+.name-entry-row button {
+  background: var(--red);
+  box-shadow: 4px 4px 0 var(--red-shadow);
+  color: var(--on-red);
+  cursor: pointer;
+  font-size: clamp(10px, 1.3vw, 17px);
+  padding: 0 clamp(12px, 1.8vw, 24px);
+}
+
+.name-entry-form small {
+  color: rgba(255, 255, 255, .58);
+  display: block;
+  font-family: "Courier New", monospace;
+  font-size: clamp(7px, .82vw, 11px);
+  margin-top: clamp(5px, .7vw, 9px);
+}
+
+.name-entry-error {
+  color: #ff889a;
+  font-family: "Courier New", monospace;
+  font-size: clamp(9px, 1.1vw, 14px);
+  font-weight: 900;
+  margin: clamp(4px, .6vw, 8px) 0 0;
+}
+
+.leaderboard-view {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+}
+
+.leaderboard-heading {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: space-between;
+  margin-bottom: clamp(5px, .8vw, 10px);
+}
+
+.leaderboard-heading h2 {
+  font-size: clamp(22px, 2.8vw, 40px);
+}
+
+.current-score-chip {
+  align-items: flex-end;
+  background: rgba(255, 216, 78, .12);
+  border: 3px solid rgba(255, 216, 78, .7);
+  border-radius: 2px;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, .3);
+  display: flex;
+  flex-direction: column;
+  padding: clamp(5px, .65vw, 9px) clamp(8px, 1.1vw, 15px);
+}
+
+.current-score-chip small {
+  color: rgba(255, 255, 255, .66);
+  font-size: clamp(9px, .9vw, 13px);
+  font-weight: 900;
+}
+
+.current-score-chip strong {
+  color: var(--yellow);
+  font-family: "Courier New", monospace;
+  font-size: clamp(18px, 2vw, 28px);
+  line-height: 1;
+  text-shadow: 2px 2px 0 #111317;
+}
+
+.leaderboard-list {
+  display: grid;
+  grid-template-rows: repeat(10, minmax(0, 1fr));
+  flex: 1;
+  gap: clamp(3px, .42vw, 6px);
+  list-style: none;
+  margin: 0;
+  min-height: 0;
+  padding: 0;
+}
+
+.leaderboard-list li {
+  align-items: center;
+  background: rgba(255, 255, 255, .065);
+  border: 2px solid rgba(255, 255, 255, .18);
+  border-radius: 2px;
+  display: grid;
+  font-family: "Courier New", monospace;
+  font-size: clamp(11px, 1.25vw, 18px);
+  font-weight: 900;
+  gap: clamp(6px, 1vw, 14px);
+  grid-template-columns: clamp(32px, 3.8vw, 52px) minmax(90px, 1.1fr) minmax(120px, .9fr) clamp(70px, 7.5vw, 104px);
+  min-height: 0;
+  padding: clamp(3px, .38vw, 5px) clamp(8px, 1vw, 14px);
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, .62);
+}
+
+.leaderboard-list li.podium {
+  border-color: rgba(255, 255, 255, .2);
+}
+
+.leaderboard-list li.rank-1 {
+  background: linear-gradient(90deg, rgba(255, 216, 78, .23), rgba(255, 216, 78, .07));
+  border-color: rgba(255, 216, 78, .55);
+}
+
+.leaderboard-list li.rank-2 {
+  background: linear-gradient(90deg, rgba(218, 227, 233, .2), rgba(218, 227, 233, .055));
+  border-color: rgba(218, 227, 233, .42);
+}
+
+.leaderboard-list li.rank-3 {
+  background: linear-gradient(90deg, rgba(196, 117, 70, .2), rgba(196, 117, 70, .05));
+  border-color: rgba(211, 139, 90, .4);
+}
+
+.leaderboard-list li.is-current-player {
+  box-shadow:
+    inset 6px 0 0 var(--red),
+    3px 3px 0 rgba(0, 0, 0, .32);
+}
+
+.rank-mark {
+  align-items: center;
+  color: var(--blue-soft);
+  display: flex;
+  font-family: "Courier New", monospace;
+  font-size: clamp(12px, 1.35vw, 19px);
+  font-weight: 900;
+  justify-content: center;
+}
+
+.trophy {
+  display: inline-block;
+  font-size: clamp(19px, 2.2vw, 31px);
+  line-height: 1;
+  text-shadow: none;
+}
+
+.trophy-2 {
+  filter: grayscale(1) brightness(1.5);
+}
+
+.trophy-3 {
+  filter: sepia(.9) saturate(1.5) hue-rotate(330deg) brightness(.82);
+}
+
+.leader-name {
+  font-size: clamp(12px, 1.45vw, 20px);
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leader-detail {
+  color: rgba(255, 255, 255, .58);
+  font-size: clamp(10px, 1.05vw, 15px);
+  font-weight: 900;
+}
+
+.leaderboard-list li > strong {
+  color: var(--yellow);
+  font-family: "Courier New", monospace;
+  font-size: clamp(14px, 1.65vw, 23px);
+  text-align: right;
+}
+
+.empty-leaderboard {
+  align-items: center;
+  border: 3px dashed rgba(255, 255, 255, .4);
+  border-radius: 2px;
+  color: rgba(255, 255, 255, .72);
+  display: flex;
+  flex: 1;
+  font-family: "Courier New", monospace;
+  font-size: clamp(13px, 1.65vw, 22px);
+  font-weight: 900;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, .62);
+}
+
+.leaderboard-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: clamp(6px, .8vw, 10px);
+  justify-content: center;
+  margin-top: clamp(6px, .8vw, 10px);
+}
+
+.leaderboard-actions button {
+  color: white;
+  cursor: pointer;
+  font-family: "Courier New", monospace;
+  font-size: clamp(10px, 1.15vw, 16px);
+  min-height: clamp(30px, 3.4vw, 46px);
+  padding: 0 clamp(12px, 1.6vw, 22px);
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, .55);
+}
+
+.leaderboard-actions .play-again-button {
+  background: var(--red);
+  box-shadow: 4px 4px 0 var(--red-shadow);
+  color: var(--on-red);
+  text-shadow: none;
+}
+
+.rank-note {
+  color: rgba(255, 255, 255, .8);
+  font-family: "Courier New", monospace;
+  font-size: clamp(10px, 1.1vw, 15px);
+  font-weight: 900;
+  margin: clamp(4px, .6vw, 8px) 0 0;
+  text-align: center;
+}
+
+.game-toolbar {
+  align-items: center;
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+  min-height: 92px;
+  padding: 16px 22px;
+}
+
+.live-stats {
+  display: flex;
+  gap: clamp(16px, 3vw, 38px);
+}
+
+.live-stats span {
+  color: white;
+  font-family: "Courier New", monospace;
+  font-size: clamp(14px, 1.7vw, 20px);
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.live-stats small {
+  color: var(--blue-soft);
+  display: block;
+  font-size: 9px;
+  letter-spacing: .1em;
+  margin-bottom: 4px;
+}
+
+.toolbar-buttons {
+  display: flex;
+  gap: 9px;
+}
+
+.pause-button,
+.start-button {
+  border: 0;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 900;
+  min-height: 48px;
+  padding: 0 19px;
+  transition: transform .16s ease, filter .16s ease;
+}
+
+.pause-button {
+  background: rgba(255,255,255,.12);
+  color: white;
+}
+
+.pause-button:disabled {
+  cursor: not-allowed;
+  opacity: .35;
+}
+
+.start-button {
+  background: var(--red);
+  box-shadow: 0 5px 0 var(--red-shadow);
+  color: var(--on-red);
+  min-width: 118px;
+}
+
+.start-button:hover,
+.pause-button:not(:disabled):hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.controls-section {
+  display: grid;
+  gap: clamp(30px, 8vw, 110px);
+  grid-template-columns: .86fr 1.14fr;
+  margin: 0 auto;
+  max-width: 1440px;
+  padding: clamp(52px, 8vw, 100px) clamp(18px, 4vw, 64px);
+}
+
+.control-copy h2 {
+  font-size: clamp(30px, 4vw, 52px);
+  letter-spacing: -.045em;
+  line-height: 1.05;
+  margin: 0 0 18px;
+}
+
+.control-copy > p:last-child {
+  color: #4f6570;
+  line-height: 1.8;
+  margin: 0;
+  max-width: 520px;
+}
+
+.keyboard-guide {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.guide-item {
+  align-items: center;
+  background: white;
+  border: 1px solid rgba(27,29,34,.09);
+  border-radius: 18px;
+  box-shadow: 0 12px 28px rgba(27,29,34,.07);
+  display: flex;
+  gap: 17px;
+  min-height: 112px;
+  padding: 18px;
+}
+
+.compact-guide {
+  grid-column: 1 / -1;
+  min-height: 92px;
+}
+
+.guide-item kbd,
+.touch-key {
+  background: #fffdf8;
+  border: 2px solid #d8d4c9;
+  border-bottom-width: 6px;
+  border-radius: 9px;
+  color: var(--ink);
+  display: inline-grid;
+  font-family: "Courier New", monospace;
+  font-size: 15px;
+  font-weight: 900;
+  min-height: 49px;
+  min-width: 49px;
+  padding: 0 10px;
+  place-items: center;
+  white-space: nowrap;
+}
+
+.key-cluster {
+  display: flex;
+  gap: 4px;
+}
+
+.key-cluster kbd {
+  min-width: 38px;
+  padding: 0;
+}
+
+.guide-item b,
+.guide-item span {
+  display: block;
+}
+
+.guide-item b {
+  font-size: 17px;
+  margin-bottom: 5px;
+}
+
+.guide-item span {
+  color: #60727a;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.touch-panel {
+  display: none;
+}
+
+.site-footer {
+  background: var(--red);
+  color: var(--on-red);
+  display: flex;
+  font-family: "Courier New", monospace;
+  font-size: 12px;
+  font-weight: 900;
+  justify-content: space-between;
+  letter-spacing: .12em;
+  padding: 24px clamp(18px, 4vw, 64px);
+}
+
+@media (max-width: 900px) {
+  .game-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .controls-section {
+    grid-template-columns: 1fr;
+  }
+
+  .game-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .toolbar-buttons button {
+    flex: 1;
+  }
+}
+
+@media (max-width: 680px) {
+  .topbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 11px;
+  }
+
+  .brand-lockup {
+    gap: 8px;
+  }
+
+  .keychron-logo {
+    height: 30px;
+    width: 30px;
+  }
+
+  .topbar-actions {
+    width: 100%;
+  }
+
+  .best-score {
+    margin-right: auto;
+  }
+
+  .game-heading {
+    padding-top: 35px;
+  }
+
+  .game-stage {
+    border-radius: 16px;
+    width: calc(100% - 20px);
+  }
+
+  .screen-bezel {
+    border-width: 6px;
+    border-radius: 14px 14px 8px 8px;
+  }
+
+  .result-overlay {
+    padding: 2.2%;
+  }
+
+  .result-card,
+  .result-card.leaderboard-card {
+    border-radius: 9px;
+    padding: 7px 9px;
+    width: 96%;
+  }
+
+  .result-brand-lockup {
+    margin-bottom: 3px;
+  }
+
+  .leaderboard-list li {
+    gap: 5px;
+    grid-template-columns: 29px minmax(70px, 1fr) 58px;
+    padding: 2px 6px;
+  }
+
+  .leader-detail {
+    display: none;
+  }
+
+  .leaderboard-actions {
+    margin-top: 4px;
+  }
+
+  .leaderboard-actions button {
+    min-height: 26px;
+  }
+
+  .game-toolbar {
+    padding: 14px;
+  }
+
+  .live-stats {
+    display: grid;
+    gap: 11px;
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .live-stats span {
+    font-size: 12px;
+  }
+
+  .keyboard-guide {
+    grid-template-columns: 1fr;
+  }
+
+  .compact-guide {
+    grid-column: auto;
+  }
+
+  .touch-panel {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: repeat(4, 1fr);
+    padding: 0 10px 42px;
+  }
+
+  .touch-key {
+    cursor: pointer;
+    font-size: 23px;
+    min-height: 70px;
+    touch-action: none;
+  }
+
+  .touch-key span {
+    display: block;
+    font-family: Arial, sans-serif;
+    font-size: 10px;
+  }
+
+  .jump-key {
+    background: var(--red);
+    border-color: var(--red-shadow);
+    color: var(--on-red);
+  }
+
+  .controls-section {
+    padding-bottom: 40px;
+  }
+
+  .site-footer {
+    align-items: center;
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+}
