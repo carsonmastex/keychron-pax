@@ -22,12 +22,15 @@ const GROUND_Y = 570;
 
 // Booth difficulty: runs should last about a minute so the queue keeps moving.
 // (Original Taiwan values in brackets.)
-const START_SPEED = 11; // [6.6]
-const MAX_SPEED = 20; // [14.8]
-// Speed goes up in steps: +SPEED_STEP every SPEED_STEP_METRES (about a minute
-// to reach MAX_SPEED). [Original: smooth +1 every 480 m]
-const SPEED_STEP = 0.45;
+// Boss's call (2026-10-05): a little faster than the Taiwan original.
+// [Taiwan values in brackets; the earlier booth tuning was start 11, +0.45/50 m, max 20]
+const START_SPEED = 7.5; // [6.6]
+const MAX_SPEED = 16; // [14.8]
+// Speed goes up in steps: +SPEED_STEP every SPEED_STEP_METRES.
+// [Taiwan: smooth +1 every 480 m]
+const SPEED_STEP = 0.15;
 const SPEED_STEP_METRES = 50;
+// Obstacle density unchanged from the earlier booth tuning (boss asked only for speed)
 const OBSTACLE_GAP_BASE = 1.15; // seconds between obstacles at the start [1.72]
 const OBSTACLE_GAP_RANDOM = 0.45; // [0.62]
 const OBSTACLE_RAMP_METRES = 600; // gap shrinks by 1s over this distance [2000]
@@ -1527,9 +1530,12 @@ function drawObstacle(ctx: CanvasRenderingContext2D, obstacle: Obstacle) {
     ctx.beginPath();
     ctx.ellipse(x + width / 2, GROUND_Y + 3, width * 0.55, 8, 0, 0, Math.PI * 2);
     ctx.fill();
+    // Draw 15% larger than the hitbox, anchored at the bottom centre
+    const drawW = width * 1.15;
+    const drawH = height * 1.15;
     ctx.save();
-    ctx.translate(x, y);
-    ctx.scale(width / 108, height / 72);
+    ctx.translate(x - (drawW - width) / 2, y - (drawH - height));
+    ctx.scale(drawW / 108, drawH / 72);
     {
     // Local drawing space: 108 x 72
     const x = 0;
@@ -3302,8 +3308,9 @@ function PizzaDashGame() {
         // jumping rider hits it, only sliding gets under.
         banner: { w: 170, h: GROUND_Y - 92, y: 0 },
         drone: { w: 92, h: 36, y: GROUND_Y - 128 },
-        // Drawn at 108x72 and scaled up so it is about as big as the plane
-        truck: { w: 150, h: 100, y: GROUND_Y - 100 },
+        // Hitbox sized so the jump window at the slowest speed matches the box
+        // stack (~0.32 s); it is drawn 15% bigger, close to the plane's size.
+        truck: { w: 120, h: 80, y: GROUND_Y - 80 },
       };
       const spec = specs[kind];
       const spawnX = WORLD_WIDTH + 50;
