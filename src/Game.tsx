@@ -1460,6 +1460,153 @@ function drawObstacle(ctx: CanvasRenderingContext2D, obstacle: Obstacle) {
   ctx.restore();
 }
 
+/**
+ * A little ginger cat riding on the board's nose. Origin is between its
+ * feet; it faces right. `crouch` (0..1) flattens it when the rider slides.
+ */
+function drawBoardCat(ctx: CanvasRenderingContext2D, elapsed: number, crouch: number) {
+  const outline = "#1b1d22";
+  const fur = "#f2a33a";
+  const furDark = "#d9822b";
+  ctx.save();
+  ctx.scale(1.25, 1.25 * (1 - crouch * 0.28));
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
+  // Tail, swishing behind
+  const swish = Math.sin(elapsed * 4.2) * 3;
+  const drawTail = (color: string, width: number) => {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    ctx.moveTo(-6, -4);
+    ctx.quadraticCurveTo(-15, -6, -13 + swish * 0.4, -15);
+    ctx.quadraticCurveTo(-11 + swish, -21, -15 + swish, -22);
+    ctx.stroke();
+  };
+  drawTail(outline, 6.5);
+  drawTail(fur, 4);
+
+  // Body
+  ctx.fillStyle = fur;
+  ctx.beginPath();
+  ctx.ellipse(0, -6.5, 9, 7, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = outline;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  // Paws
+  ctx.fillStyle = "#fff8ee";
+  for (const px of [3.5, 8]) {
+    ctx.beginPath();
+    ctx.ellipse(px, -1.2, 2.6, 1.8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  // Head
+  const hx = 6;
+  const hy = -17;
+  const ear = (x1: number, tipX: number, x2: number) => {
+    ctx.fillStyle = fur;
+    ctx.beginPath();
+    ctx.moveTo(hx + x1, hy - 4);
+    ctx.lineTo(hx + tipX, hy - 12);
+    ctx.lineTo(hx + x2, hy - 5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#ffb3c1";
+    ctx.beginPath();
+    ctx.moveTo(hx + x1 + 1.4, hy - 5);
+    ctx.lineTo(hx + tipX, hy - 9.5);
+    ctx.lineTo(hx + x2 - 1.4, hy - 5.5);
+    ctx.closePath();
+    ctx.fill();
+  };
+  const earTwitch = Math.sin(elapsed * 1.3) > 0.97 ? 1 : 0;
+  ear(-7, -5 - earTwitch, -1.5);
+  ear(1.5, 5, 7.5);
+  ctx.fillStyle = fur;
+  ctx.beginPath();
+  ctx.ellipse(hx, hy, 8.5, 7.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = outline;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  // Forehead stripes
+  ctx.strokeStyle = furDark;
+  ctx.lineWidth = 1.6;
+  for (const sx of [-2.5, 0, 2.5]) {
+    ctx.beginPath();
+    ctx.moveTo(hx + sx, hy - 7);
+    ctx.lineTo(hx + sx * 0.8, hy - 4.5);
+    ctx.stroke();
+  }
+  // Eyes (blink on their own rhythm)
+  const blink = (elapsed + 1.1) % 2.9 < 0.12;
+  for (const ex of [hx - 1.5, hx + 4]) {
+    if (blink) {
+      ctx.strokeStyle = outline;
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.arc(ex, hy - 0.5, 1.6, 0.1 * Math.PI, 0.9 * Math.PI);
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = outline;
+      ctx.beginPath();
+      ctx.ellipse(ex, hy - 0.5, 1.7, 2.3, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(ex + 0.6, hy - 1.4, 0.75, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  // Blush, nose, mouth, whiskers
+  ctx.fillStyle = "rgba(255,120,140,.6)";
+  ctx.beginPath();
+  ctx.ellipse(hx - 4.2, hy + 2.6, 1.8, 1.2, 0, 0, Math.PI * 2);
+  ctx.ellipse(hx + 6.4, hy + 2.4, 1.6, 1.1, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#ff7f98";
+  ctx.beginPath();
+  ctx.moveTo(hx + 0.6, hy + 1.6);
+  ctx.lineTo(hx + 2.8, hy + 1.6);
+  ctx.lineTo(hx + 1.7, hy + 2.8);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = outline;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(hx + 0.9, hy + 3, 0.9, 0, Math.PI);
+  ctx.arc(hx + 2.7, hy + 3, 0.9, 0, Math.PI);
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(27,29,34,.55)";
+  ctx.lineWidth = 0.8;
+  ctx.beginPath();
+  ctx.moveTo(hx + 6, hy + 1.2);
+  ctx.lineTo(hx + 11, hy + 0.4);
+  ctx.moveTo(hx + 6, hy + 2.4);
+  ctx.lineTo(hx + 11, hy + 2.8);
+  ctx.stroke();
+
+  // PAX-gold collar with a bell
+  ctx.strokeStyle = "#f5b21f";
+  ctx.lineWidth = 2.4;
+  ctx.beginPath();
+  ctx.arc(hx, hy, 7.6, 0.25 * Math.PI, 0.75 * Math.PI);
+  ctx.stroke();
+  ctx.fillStyle = "#ffd84e";
+  ctx.beginPath();
+  ctx.arc(hx, hy + 8.2, 1.7, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = outline;
+  ctx.lineWidth = 0.8;
+  ctx.stroke();
+  ctx.restore();
+}
+
 // Skate tricks: each jump picks one at random; riding sometimes pops a manual.
 type SkateTrick = "ollie" | "kickflip" | "shuvit" | "grab";
 const SKATE_TRICKS: SkateTrick[] = ["ollie", "kickflip", "shuvit", "grab"];
@@ -1852,6 +1999,20 @@ function drawPlayer(
     ctx.fill();
     drawFace(76, H - 104, HEAD_RADIUS, airborne && player.velocityY < 0);
   }
+
+  // ---- Board cat ----
+  // Follows the board's position and tilt but not its flip; it hops clear
+  // while the board flips or spins underneath, then lands back on the nose.
+  const catHop =
+    trick === "kickflip" || trick === "shuvit" ? trickArc * 22 : trick === "grab" ? trickArc * 6 : 0;
+  ctx.save();
+  ctx.translate(76, boardY);
+  ctx.rotate(boardTilt);
+  // On the nose while riding; hops back to the tail when the rider slides
+  // so it doesn't cover their face.
+  ctx.translate(player.sliding ? -44 : 40, -1 - catHop);
+  drawBoardCat(ctx, state.elapsed, player.sliding ? 1 : 0);
+  ctx.restore();
 
   ctx.restore();
 }
