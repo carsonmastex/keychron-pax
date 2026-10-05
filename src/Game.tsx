@@ -1612,6 +1612,9 @@ type SkateTrick = "ollie" | "kickflip" | "shuvit" | "grab";
 const SKATE_TRICKS: SkateTrick[] = ["ollie", "kickflip", "shuvit", "grab"];
 const TRICK_SECONDS = 0.55;
 const skateTrick = { wasGrounded: true, start: 0, trick: "ollie" as SkateTrick };
+// Lean when steering: +1 pushing forward (right), -1 braking backward (left)
+const skaterMotion = { lastX: Number.NaN, lastT: 0, lean: 0 };
+const STEER_SPEED = 330; // px/s, matches the horizontal move speed in update()
 
 if (__DEBUG__) (window as unknown as { __skateTrick: typeof skateTrick }).__skateTrick = skateTrick;
 
@@ -1621,6 +1624,18 @@ function drawPlayer(
   keychronLogo?: HTMLImageElement,
 ) {
   const player = state.player;
+  {
+    const dt = state.elapsed - skaterMotion.lastT;
+    if (dt > 0 && dt < 0.2 && Number.isFinite(skaterMotion.lastX)) {
+      const target = clamp((player.x - skaterMotion.lastX) / (dt * STEER_SPEED), -1, 1);
+      skaterMotion.lean += (target - skaterMotion.lean) * Math.min(1, dt * 9);
+    } else if (dt < 0 || dt >= 0.2) {
+      skaterMotion.lean = 0;
+    }
+    skaterMotion.lastX = player.x;
+    skaterMotion.lastT = state.elapsed;
+  }
+  const lean = skaterMotion.lean;
   if (player.invincible > 0 && Math.floor(player.invincible * 12) % 2 === 0) return;
 
   const bounce = player.grounded ? Math.sin(state.elapsed * 15) * 1.5 : 0;
@@ -1670,10 +1685,22 @@ function drawPlayer(
     for (let index = 0; index < 3; index += 1) {
       const drift = (state.elapsed * 160 + index * 23) % 26;
       const ly = H - 46 + index * 14;
+      const extra = Math.max(0, lean) * 16;
       ctx.beginPath();
       ctx.moveTo(8 - drift, ly);
-      ctx.lineTo(-6 - drift, ly);
+      ctx.lineTo(-6 - drift - extra, ly);
       ctx.stroke();
+    }
+    if (lean < -0.35 && !player.sliding) {
+      // Tail scraping the ground: little dust puffs behind the board
+      const strength = Math.min(1, (-lean - 0.35) / 0.5);
+      for (let puff = 0; puff < 4; puff += 1) {
+        const age = (state.elapsed * 3 + puff * 0.25) % 1;
+        ctx.fillStyle = `rgba(240,232,214,${(1 - age) * 0.95 * strength})`;
+        ctx.beginPath();
+        ctx.arc(14 - age * 26, H - 6 - age * 12 - puff * 2, 3 + age * 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
   }
 
@@ -1694,6 +1721,7 @@ function drawPlayer(
   let boardTilt = airborne ? clamp(player.velocityY / 2600, -0.32, 0.1) : 0;
   if (trick === "grab") boardTilt -= 0.2 * trickArc;
   if (manual) boardTilt = -0.14;
+  if (!airborne) boardTilt += lean > 0 ? lean * 0.07 : lean * 0.16;
   const boardY = H - 16 - (manual ? 4 : 0);
   ctx.save();
   ctx.translate(76, boardY);
@@ -1973,6 +2001,11 @@ function drawPlayer(
     drawLimb(denim, 11, [[78, H - 50], [92, H - 38 - tuck], [100, H - 24 - tuck * 0.4]]);
     drawShoe(51, H - 22 - tuck * 0.4);
     drawShoe(101, H - 22 - tuck * 0.4);
+    // Upper body leans from the hips: forward when pushing, back when braking
+    ctx.save();
+    ctx.translate(72, H - 50);
+    ctx.rotate(lean * 0.22);
+    ctx.translate(-72 + lean * 5, -(H - 50));
     drawKeyboardOnBack(50, H - 74, -1.05);
     // Back arm out for balance
     drawLimb(ink, 8, [[64, H - 72], [46, H - 62 + sway], [32, H - 66 + sway]]);
@@ -1998,6 +2031,7 @@ function drawPlayer(
     ctx.arc(handX, handY, 5.5, 0, Math.PI * 2);
     ctx.fill();
     drawFace(76, H - 104, HEAD_RADIUS, airborne && player.velocityY < 0);
+    ctx.restore();
   }
 
   // ---- Board cat ----
@@ -2011,6 +2045,7 @@ function drawPlayer(
   // On the nose while riding; hops back to the tail when the rider slides
   // so it doesn't cover their face.
   ctx.translate(player.sliding ? -44 : 40, -1 - catHop);
+  ctx.rotate(-lean * 0.22);
   drawBoardCat(ctx, state.elapsed, player.sliding ? 1 : 0);
   ctx.restore();
 
