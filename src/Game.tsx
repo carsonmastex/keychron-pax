@@ -1465,11 +1465,13 @@ type SkateTrick = "ollie" | "kickflip" | "shuvit" | "grab";
 const SKATE_TRICKS: SkateTrick[] = ["ollie", "kickflip", "shuvit", "grab"];
 const TRICK_SECONDS = 0.55;
 const skateTrick = { wasGrounded: true, start: 0, trick: "ollie" as SkateTrick };
+
 if (__DEBUG__) (window as unknown as { __skateTrick: typeof skateTrick }).__skateTrick = skateTrick;
 
 function drawPlayer(
   ctx: CanvasRenderingContext2D,
   state: GameState,
+  keychronLogo?: HTMLImageElement,
 ) {
   const player = state.player;
   if (player.invincible > 0 && Math.floor(player.invincible * 12) % 2 === 0) return;
@@ -1620,26 +1622,75 @@ function drawPlayer(
     ctx.strokeStyle = line;
     ctx.lineWidth = 2.5;
     ctx.stroke();
-    // Helmet with gold stripe and K badge
-    ctx.fillStyle = ink;
+    // White baseball cap, brim forward, round Keychron logo on the front
+    const rimY = hy - r * 0.2;
+    const capWhite = "#f7f7f4";
+    // Brim (drawn first so the crown overlaps its root)
+    ctx.fillStyle = capWhite;
     ctx.beginPath();
-    ctx.arc(hx, hy - 1, r + 3, Math.PI * 0.98, Math.PI * 2.02);
+    ctx.moveTo(hx + r * 0.3, rimY - r * 0.06);
+    ctx.quadraticCurveTo(hx + r * 1.5, rimY - r * 0.16, hx + r * 1.62, rimY + r * 0.1);
+    ctx.quadraticCurveTo(hx + r * 1.05, rimY + r * 0.24, hx + r * 0.3, rimY + r * 0.1);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = gold;
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.arc(hx, hy - 1, r - 4, Math.PI * 1.15, Math.PI * 1.85);
+    ctx.strokeStyle = line;
+    ctx.lineWidth = 2.5;
     ctx.stroke();
-    ctx.fillStyle = gold;
+    ctx.strokeStyle = "#cfd3d6";
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(hx - r * 0.45, hy - r * 0.45, r * 0.24, 0, Math.PI * 2);
+    ctx.moveTo(hx + r * 0.45, rimY + r * 0.1);
+    ctx.quadraticCurveTo(hx + r * 1.05, rimY + r * 0.16, hx + r * 1.5, rimY + r * 0.08);
+    ctx.stroke();
+    // Crown
+    ctx.fillStyle = capWhite;
+    ctx.beginPath();
+    ctx.ellipse(hx - r * 0.02, rimY, r * 1.04, r * 0.96, 0, Math.PI, Math.PI * 2);
+    ctx.quadraticCurveTo(hx, rimY + r * 0.12, hx - r * 1.06, rimY);
+    ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = ink;
-    ctx.font = `900 ${Math.round(r * 0.34)}px Arial`;
-    ctx.textAlign = "center";
-    ctx.fillText("K", hx - r * 0.45, hy - r * 0.33);
-    ctx.textAlign = "left";
+    ctx.strokeStyle = line;
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    // Panel seams and top button
+    ctx.strokeStyle = "#d6dadd";
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(hx - r * 0.02, rimY - r * 0.94);
+    ctx.quadraticCurveTo(hx - r * 0.55, rimY - r * 0.55, hx - r * 0.62, rimY + r * 0.04);
+    ctx.moveTo(hx - r * 0.02, rimY - r * 0.94);
+    ctx.quadraticCurveTo(hx - r * 0.05, rimY - r * 0.5, hx - r * 0.12, rimY + r * 0.08);
+    ctx.stroke();
+    ctx.fillStyle = capWhite;
+    ctx.beginPath();
+    ctx.arc(hx - r * 0.02, rimY - r * 0.96, r * 0.1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = line;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // Round Keychron logo on the front panel
+    const logoX = hx + r * 0.42;
+    const logoY = rimY - r * 0.42;
+    const logoR = r * 0.3;
+    if (keychronLogo && keychronLogo.complete && keychronLogo.naturalWidth > 0) {
+      ctx.save();
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(keychronLogo, logoX - logoR, logoY - logoR, logoR * 2, logoR * 2);
+      ctx.restore();
+    } else {
+      ctx.strokeStyle = ink;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(logoX, logoY, logoR * 0.85, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = ink;
+      ctx.font = `900 ${Math.round(logoR * 1.1)}px Arial`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("K", logoX, logoY + 1);
+      ctx.textAlign = "left";
+      ctx.textBaseline = "alphabetic";
+    }
     // Cheeks
     ctx.fillStyle = "rgba(255,120,140,.55)";
     ctx.beginPath();
@@ -3200,7 +3251,7 @@ function PizzaDashGame() {
       game.keycaps.forEach((keycap) => drawKeycap(ctx, keycap, game.elapsed));
       if (game.bigPizza) drawBigPizza(ctx, game.bigPizza, game.elapsed);
       game.obstacles.forEach((obstacle) => drawObstacle(ctx, obstacle));
-      drawPlayer(ctx, game);
+      drawPlayer(ctx, game, images.keychron);
       drawParticles(ctx, game.particles);
       drawScorePopups(ctx, game.scorePopups);
       drawHud(ctx, game, highScoreRef.current);
@@ -3246,7 +3297,7 @@ function PizzaDashGame() {
         update: () => update(1 / 60, performance.now()),
         background: () => drawBackground(ctx, game(), images),
         hud: () => drawHud(ctx, game(), highScoreRef.current),
-        player: () => drawPlayer(ctx, game()),
+        player: () => drawPlayer(ctx, game(), images.keychron),
         items: () => {
           game().pizzas.forEach((pizza) => drawPizza(ctx, pizza, game().elapsed));
           game().keycaps.forEach((keycap) => drawKeycap(ctx, keycap, game().elapsed));
