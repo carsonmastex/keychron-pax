@@ -1934,9 +1934,9 @@ const RIDER_FEET_ROW = 40;
 // Where the real Keychron logo goes on the cap and the T-shirt (grid cells)
 type PixelLogoSpot = { col: number; row: number; size: number };
 type PixelRider = { runs: PixelRun[]; logos: PixelLogoSpot[] };
-const pixelRiderCache = new Map<PixelPose, PixelRider>();
+const pixelRiderCache = new Map<string, PixelRider>();
 
-function buildPixelRider(pose: PixelPose): PixelRider {
+function buildPixelRider(pose: PixelPose, blink: boolean): PixelRider {
   const { rect, outline, runs } = makePixelGrid(RIDER_W, RIDER_H);
   const logos: PixelLogoSpot[] = [];
 
@@ -1957,9 +1957,13 @@ function buildPixelRider(pose: PixelPose): PixelRider {
     // Ear
     rect(hx + 6, hy + 12, 2, 3, PX.skinSh);
     rect(hx + 7, hy + 13, 1, 1, PX.skin);
-    // Eye (with a sparkle), brow, cheek, mouth
-    rect(hx + 12, hy + 11, 2, 3, PX.eye);
-    rect(hx + 12, hy + 11, 1, 1, PX.logo);
+    // Eye (with a sparkle), or a closed line mid-blink; brow, cheek, mouth
+    if (blink) {
+      rect(hx + 12, hy + 13, 2, 1, PX.eye);
+    } else {
+      rect(hx + 12, hy + 11, 2, 3, PX.eye);
+      rect(hx + 12, hy + 11, 1, 1, PX.logo);
+    }
     rect(hx + 11, hy + 10, 3, 1, PX.hair);
     rect(hx + 13, hy + 15, 2, 1, PX.blush);
     rect(hx + 12, hy + 16, 2, 1, PX.mouth);
@@ -2088,12 +2092,15 @@ function drawPixelRider(
   pose: PixelPose,
   tilt: number,
   deckY: number,
-  keychronLogo?: HTMLImageElement,
+  keychronLogo: HTMLImageElement | undefined,
+  blink: boolean,
+  airTime: number | null,
 ) {
-  let rider = pixelRiderCache.get(pose);
+  const key = blink ? `${pose}-blink` : pose;
+  let rider = pixelRiderCache.get(key);
   if (!rider) {
-    rider = buildPixelRider(pose);
-    pixelRiderCache.set(pose, rider);
+    rider = buildPixelRider(pose, blink);
+    pixelRiderCache.set(key, rider);
   }
   ctx.save();
   ctx.translate(76, deckY);
@@ -2113,7 +2120,44 @@ function drawPixelRider(
       );
     }
   }
+  if (airTime !== null && airTime < SWEAT_SECONDS) drawSweatDrops(ctx, pose, airTime);
   ctx.restore();
+}
+
+// Sweat drops flung back off the head just after take-off
+const SWEAT_SECONDS = 0.6;
+const SWEAT_DROPS = [
+  { delay: 0, speed: 30, lift: 12 },
+  { delay: 0.04, speed: 22, lift: 20 },
+  { delay: 0.08, speed: 36, lift: 4 },
+  { delay: 0.12, speed: 26, lift: 14 },
+];
+// Pixel teardrop: k = dark edge, b = blue, w = white glint
+const SWEAT_SHAPE = ["..k..", ".kbk.", "kwbbk", "kbbbk", ".kkk."];
+const SWEAT_COLORS: Record<string, string> = { k: "#15171c", b: "#5fc4ff", w: "#ffffff" };
+function drawSweatDrops(ctx: CanvasRenderingContext2D, pose: PixelPose, airTime: number) {
+  const S = PIXEL_SCALE;
+  // Back of the head, in rider grid cells
+  const startCol = 8;
+  const startRow = pose === "tuck" ? 12 : 9;
+  for (const drop of SWEAT_DROPS) {
+    const t = airTime - drop.delay;
+    const life = SWEAT_SECONDS - drop.delay;
+    if (t <= 0 || t >= life) continue;
+    const col = startCol - drop.speed * t;
+    const row = startRow - drop.lift * t + 34 * t * t;
+    ctx.globalAlpha = Math.min(1, 2 * (1 - t / life));
+    const x = (col - RIDER_ANCHOR_COL) * S;
+    const y = (row - RIDER_FEET_ROW) * S;
+    SWEAT_SHAPE.forEach((line, j) => {
+      [...line].forEach((ch, i) => {
+        if (ch === ".") return;
+        ctx.fillStyle = SWEAT_COLORS[ch];
+        ctx.fillRect(x + i * S, y + j * S, S + 0.4, S + 0.4);
+      });
+    });
+  }
+  ctx.globalAlpha = 1;
 }
 
 // Board grid: 40 x 14, deck top on row 4, centred on column 19.5.
@@ -2336,7 +2380,15 @@ function drawPlayer(
         : Math.floor(state.elapsed * 3) % 2 === 0 ? "ride" : "ride2";
     // Shoe outline sits on the deck outline; in the air the rider follows half
     // of the board's tilt so the feet stay on it
-    drawPixelRider(ctx, pose, lean * 0.1 + (airborne ? boardTilt * 0.6 : 0), boardY - PIXEL_SCALE, keychronLogo);
+    drawPixelRider(
+      ctx,
+      pose,
+      lean * 0.1 + (airborne ? boardTilt * 0.6 : 0),
+      boardY - PIXEL_SCALE,
+      keychronLogo,
+      state.elapsed % 3.4 < 0.13,
+      airborne ? state.elapsed - skateTrick.start : null,
+    );
   } else {
   // ---- Rider (chibi) ----
   const blink = state.elapsed % 3.4 < 0.13;
