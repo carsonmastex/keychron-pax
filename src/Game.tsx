@@ -1832,6 +1832,334 @@ const STEER_SPEED = 330; // px/s, matches the horizontal move speed in update()
 
 if (__DEBUG__) (window as unknown as { __skateTrick: typeof skateTrick }).__skateTrick = skateTrick;
 
+// ---- Pixel-art rider and board (the old chibi rider: add ?rider=classic) ----
+// Art is laid out on a small pixel grid, then drawn as solid colour runs at
+// PIXEL_SCALE. Drawing rects (not a scaled image) keeps every pixel the same
+// size and lets the sprite tilt and move smoothly without shimmering.
+const PIXEL_RIDER =
+  typeof window === "undefined" || new URLSearchParams(window.location.search).get("rider") !== "classic";
+type PixelPose = "ride" | "ride2" | "tuck" | "air" | "slide";
+type PixelRun = { x: number; y: number; w: number; color: string };
+const PIXEL_SCALE = 3.5;
+
+const PX = {
+  cap: "#24272d",
+  capHi: "#3d434c",
+  logo: "#f4f4f2",
+  hair: "#6b3d20",
+  hairHi: "#8d5530",
+  skin: "#f7cba6",
+  skinSh: "#e2a77f",
+  eye: "#1b1d22",
+  blush: "#f19a8e",
+  mouth: "#b8574c",
+  tee: "#25282e",
+  teeHi: "#3a3f47",
+  jeans: "#2f5597",
+  jeansHi: "#4a76c0",
+  shoe: "#f6f6f4",
+  sole: "#b8bec5",
+  deck: "#f5b21f",
+  deckSh: "#c98a12",
+  grip: "#2b2f36",
+  truck: "#9aa3ab",
+  wheel: "#f2efe6",
+  hub: "#8eddf1",
+  outline: "#15171c",
+};
+
+function makePixelGrid(width: number, height: number) {
+  const grid: (string | null)[][] = Array.from({ length: height }, () => Array<string | null>(width).fill(null));
+  const rect = (x: number, y: number, w: number, h: number, color: string) => {
+    for (let j = y; j < y + h; j += 1) {
+      for (let i = x; i < x + w; i += 1) {
+        if (j >= 2 && j < height - 2 && i >= 2 && i < width - 2) grid[j][i] = color;
+      }
+    }
+  };
+  const pattern = (x: number, y: number, rows: string[], color: string) =>
+    rows.forEach((row, j) => [...row].forEach((ch, i) => ch === "w" && rect(x + i, y + j, 1, 1, color)));
+  // Adds a 1px border around everything drawn so far
+  const outline = (color: string, diagonal: boolean) => {
+    const add: [number, number][] = [];
+    for (let j = 0; j < height; j += 1) {
+      for (let i = 0; i < width; i += 1) {
+        if (grid[j][i]) continue;
+        const near = (dx: number, dy: number) => Boolean(grid[j + dy]?.[i + dx]);
+        if (near(1, 0) || near(-1, 0) || near(0, 1) || near(0, -1) ||
+            (diagonal && (near(1, 1) || near(-1, 1) || near(1, -1) || near(-1, -1)))) {
+          add.push([i, j]);
+        }
+      }
+    }
+    add.forEach(([i, j]) => { grid[j][i] = color; });
+  };
+  // Merges each row into runs of the same colour (far fewer rects to draw)
+  const runs = () => {
+    const out: PixelRun[] = [];
+    grid.forEach((row, y) => {
+      let x = 0;
+      while (x < width) {
+        const color = row[x];
+        if (!color) { x += 1; continue; }
+        let w = 1;
+        while (x + w < width && row[x + w] === color) w += 1;
+        out.push({ x, y, w, color });
+        x += w;
+      }
+    });
+    return out;
+  };
+  return { rect, pattern, outline, runs };
+}
+
+function drawPixelRuns(ctx: CanvasRenderingContext2D, runs: PixelRun[], originCol: number, originRow: number) {
+  // A hair of overlap hides seams between rows when the sprite is tilted
+  const S = PIXEL_SCALE;
+  let current = "";
+  for (const run of runs) {
+    if (run.color !== current) {
+      ctx.fillStyle = run.color;
+      current = run.color;
+    }
+    ctx.fillRect((run.x - originCol) * S, (run.y - originRow) * S, run.w * S + 0.4, S + 0.4);
+  }
+}
+
+// Rider grid: 36 x 42, feet sit on row 40, centred on column 17
+const RIDER_W = 36;
+const RIDER_H = 42;
+const RIDER_ANCHOR_COL = 17;
+const RIDER_FEET_ROW = 40;
+// Where the real Keychron logo goes on the cap and the T-shirt (grid cells)
+type PixelLogoSpot = { col: number; row: number; size: number };
+type PixelRider = { runs: PixelRun[]; logos: PixelLogoSpot[] };
+const pixelRiderCache = new Map<PixelPose, PixelRider>();
+
+function buildPixelRider(pose: PixelPose): PixelRider {
+  const { rect, outline, runs } = makePixelGrid(RIDER_W, RIDER_H);
+  const logos: PixelLogoSpot[] = [];
+
+  const head = (hx: number, hy: number) => {
+    // Hair at the back and sides
+    rect(hx + 1, hy + 7, 5, 9, PX.hair);
+    rect(hx, hy + 8, 1, 6, PX.hair);
+    rect(hx + 2, hy + 8, 2, 4, PX.hairHi);
+    // Face
+    rect(hx + 4, hy + 8, 12, 10, PX.skin);
+    rect(hx + 5, hy + 18, 9, 1, PX.skin);
+    rect(hx + 4, hy + 8, 12, 1, PX.skinSh);
+    // Fringe and sideburn under the cap
+    rect(hx + 5, hy + 8, 8, 2, PX.hair);
+    rect(hx + 6, hy + 10, 1, 1, PX.hair);
+    rect(hx + 9, hy + 10, 1, 1, PX.hair);
+    rect(hx + 4, hy + 9, 2, 5, PX.hair);
+    // Ear
+    rect(hx + 6, hy + 12, 2, 3, PX.skinSh);
+    rect(hx + 7, hy + 13, 1, 1, PX.skin);
+    // Eye (with a sparkle), brow, cheek, mouth
+    rect(hx + 12, hy + 11, 2, 3, PX.eye);
+    rect(hx + 12, hy + 11, 1, 1, PX.logo);
+    rect(hx + 11, hy + 10, 3, 1, PX.hair);
+    rect(hx + 13, hy + 15, 2, 1, PX.blush);
+    rect(hx + 12, hy + 16, 2, 1, PX.mouth);
+    // Black cap: crown, highlight, round Keychron "K" logo, brim forward
+    rect(hx + 5, hy, 9, 1, PX.cap);
+    rect(hx + 3, hy + 1, 13, 1, PX.cap);
+    rect(hx + 2, hy + 2, 15, 6, PX.cap);
+    rect(hx + 5, hy + 1, 4, 1, PX.capHi);
+    rect(hx + 3, hy + 2, 2, 3, PX.capHi);
+    logos.push({ col: hx + 9, row: hy + 1, size: 6 });
+    rect(hx + 14, hy + 7, 9, 2, PX.cap);
+    rect(hx + 16, hy + 7, 6, 1, PX.capHi);
+  };
+  const torso = (tx: number, ty: number, rows = 9) => {
+    rect(tx + 2, ty, 9, rows, PX.tee);
+    rect(tx + 1, ty + 1, 11, 3, PX.tee);
+    rect(tx + 3, ty + 1, 1, rows - 3, PX.teeHi);
+    // Hidden behind the head when crouched for a slide
+    if (pose !== "slide") logos.push({ col: tx + 4, row: ty + 2, size: 6 });
+  };
+  const shoe = (x: number, y: number) => {
+    rect(x, y, 6, 1, PX.shoe);
+    rect(x + 1, y - 1, 3, 1, PX.shoe);
+    rect(x, y + 1, 6, 1, PX.sole);
+  };
+
+  const fistsUp = (ty: number) => {
+    // Both fists up in the air, drawn over the head's edge so they show
+    rect(tx - 1, ty + 1, 3, 2, PX.tee);
+    rect(tx - 3, ty - 1, 2, 3, PX.skin);
+    rect(tx - 4, ty - 3, 3, 2, PX.skin);
+    rect(tx + 11, ty + 1, 3, 2, PX.tee);
+    rect(tx + 14, ty - 1, 2, 3, PX.skin);
+    rect(tx + 14, ty - 3, 3, 2, PX.skin);
+  };
+
+  const tx = 10;
+  if (pose === "tuck") {
+    // Ollie take-off: crouched in the air, knees pulled up, feet on the board
+    const ty = 24;
+    rect(tx + 2, ty + 9, 9, 2, PX.jeans);
+    // Back leg: knee bent back and up
+    rect(tx - 1, ty + 8, 6, 3, PX.jeans);
+    rect(tx - 2, ty + 10, 3, 4, PX.jeans);
+    rect(tx, ty + 8, 4, 1, PX.jeansHi);
+    shoe(tx - 3, 38);
+    torso(tx, ty);
+    // Front leg (in front of the body): knee pulled right up and forward
+    rect(tx + 7, ty + 6, 8, 3, PX.jeans);
+    rect(tx + 8, ty + 6, 5, 1, PX.jeansHi);
+    rect(tx + 12, ty + 9, 3, 5, PX.jeans);
+    shoe(tx + 10, 38);
+    head(tx - 1, 5);
+    fistsUp(ty);
+  } else if (pose === "slide") {
+    // Crouched low and forward, one hand down on the board
+    const ty = 30;
+    rect(tx - 1, ty + 1, 4, 6, PX.tee);
+    torso(tx, ty, 6);
+    rect(tx + 1, ty + 6, 13, 2, PX.jeans);
+    rect(tx + 2, ty + 6, 9, 1, PX.jeansHi);
+    shoe(tx, 38);
+    shoe(tx + 9, 38);
+    rect(tx + 12, ty + 1, 2, 3, PX.tee);
+    rect(tx + 13, ty + 3, 2, 3, PX.skin);
+    rect(tx + 13, ty + 6, 3, 2, PX.skin);
+    head(tx + 4, 15);
+  } else {
+    const ty = 21;
+    const air = pose === "air";
+    const sway = pose === "ride2" ? 1 : 0;
+    // Back arm out for balance
+    if (!air) {
+      rect(tx - 1, ty + 1, 3, 3, PX.tee);
+      rect(tx - 4, ty + 2 + sway, 3, 2, PX.skin);
+      rect(tx - 6, ty + 1 + sway, 2, 3, PX.skin);
+    }
+    // Legs: wide skate stance, knees bent out more in the air
+    const knee = air ? 1 : 0;
+    rect(tx + 2, ty + 9, 9, 2, PX.jeans);
+    rect(tx + 2 - knee, ty + 11, 4, 4, PX.jeans);
+    rect(tx + 7 + knee, ty + 11, 4, 4, PX.jeans);
+    rect(tx + 3 - knee, ty + 11, 1, 3, PX.jeansHi);
+    rect(tx + 8 + knee, ty + 11, 1, 3, PX.jeansHi);
+    rect(tx, ty + 15, 4, 2, PX.jeans);
+    rect(tx + 9, ty + 15, 4, 2, PX.jeans);
+    shoe(tx - 2, ty + 17);
+    shoe(tx + 9, ty + 17);
+    torso(tx, ty);
+    // Front arm out for balance
+    if (!air) {
+      rect(tx + 11, ty + 1, 2, 3, PX.tee);
+      rect(tx + 13, ty + 2 - sway, 4, 2, PX.skin);
+      rect(tx + 17, ty + 1 - sway, 2, 3, PX.skin);
+    }
+    head(tx - 1, 2);
+    if (air) fistsUp(ty);
+  }
+  // Dark 1px outline
+  outline(PX.outline, false);
+  return { runs: runs(), logos };
+}
+
+// The logo file is a black disc with the C and TK cut out (transparent).
+// For black fabric we want the opposite: just the C and TK in white.
+let whiteKeychronMark: HTMLCanvasElement | null = null;
+function getWhiteKeychronMark(logo: HTMLImageElement) {
+  if (whiteKeychronMark) return whiteKeychronMark;
+  const size = 128;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const mctx = canvas.getContext("2d")!;
+  mctx.fillStyle = "#ffffff";
+  mctx.beginPath();
+  mctx.arc(size / 2, size / 2, size / 2 - 1, 0, Math.PI * 2);
+  mctx.fill();
+  mctx.globalCompositeOperation = "destination-out";
+  mctx.drawImage(logo, 0, 0, size, size);
+  whiteKeychronMark = canvas;
+  return canvas;
+}
+
+function drawPixelRider(
+  ctx: CanvasRenderingContext2D,
+  pose: PixelPose,
+  tilt: number,
+  deckY: number,
+  keychronLogo?: HTMLImageElement,
+) {
+  let rider = pixelRiderCache.get(pose);
+  if (!rider) {
+    rider = buildPixelRider(pose);
+    pixelRiderCache.set(pose, rider);
+  }
+  ctx.save();
+  ctx.translate(76, deckY);
+  ctx.rotate(tilt);
+  drawPixelRuns(ctx, rider.runs, RIDER_ANCHOR_COL, RIDER_FEET_ROW);
+  // The real (smooth) Keychron logo on the cap and the T-shirt, in white
+  if (keychronLogo && keychronLogo.complete && keychronLogo.naturalWidth > 0) {
+    const S = PIXEL_SCALE;
+    const mark = getWhiteKeychronMark(keychronLogo);
+    for (const spot of rider.logos) {
+      ctx.drawImage(
+        mark,
+        (spot.col - RIDER_ANCHOR_COL) * S,
+        (spot.row - RIDER_FEET_ROW) * S,
+        spot.size * S,
+        spot.size * S,
+      );
+    }
+  }
+  ctx.restore();
+}
+
+// Board grid: 40 x 14, deck top on row 4, centred on column 19.5.
+// Four versions with the wheel hubs in different spots make the wheels spin.
+const BOARD_W = 40;
+const BOARD_H = 14;
+const BOARD_ANCHOR_COL = 19.5;
+const BOARD_TOP_ROW = 4;
+const pixelBoardCache = new Map<number, PixelRun[]>();
+
+function buildPixelBoard(spin: number): PixelRun[] {
+  const { rect, pattern, outline, runs } = makePixelGrid(BOARD_W, BOARD_H);
+  // Tail and nose kicks
+  rect(3, 3, 3, 1, PX.deck);
+  rect(2, 2, 2, 1, PX.deck);
+  rect(34, 3, 3, 1, PX.deck);
+  rect(36, 2, 2, 1, PX.deck);
+  // Deck: grip tape on top, gold board, darker underside
+  rect(5, 4, 30, 1, PX.deck);
+  rect(6, 4, 28, 1, PX.grip);
+  rect(4, 5, 32, 1, PX.deck);
+  rect(5, 6, 30, 1, PX.deckSh);
+  // Trucks
+  rect(9, 7, 4, 1, PX.truck);
+  rect(27, 7, 4, 1, PX.truck);
+  // Wheels with a hub that moves around as they roll
+  const hubs: [number, number][] = [[1, 0], [3, 1], [2, 2], [0, 1]];
+  const [hx, hy] = hubs[spin];
+  for (const wx of [9, 27]) {
+    pattern(wx, 8, [".ww.", "wwww", ".ww."], PX.wheel);
+    rect(wx + hx, 8 + hy, 1, 1, PX.hub);
+  }
+  outline(PX.outline, false);
+  return runs();
+}
+
+function drawPixelBoard(ctx: CanvasRenderingContext2D, wheelAngle: number) {
+  const spin = ((Math.floor(wheelAngle / (Math.PI / 2)) % 4) + 4) % 4;
+  let runs = pixelBoardCache.get(spin);
+  if (!runs) {
+    runs = buildPixelBoard(spin);
+    pixelBoardCache.set(spin, runs);
+  }
+  drawPixelRuns(ctx, runs, BOARD_ANCHOR_COL, BOARD_TOP_ROW);
+}
+
 function drawPlayer(
   ctx: CanvasRenderingContext2D,
   state: GameState,
@@ -1953,6 +2281,9 @@ function drawPlayer(
   } else if (trick === "grab") {
     ctx.translate(0, -trickArc * 6);
   }
+  if (PIXEL_RIDER) {
+    drawPixelBoard(ctx, wheelAngle);
+  } else {
   // Deck with kicked-up nose and tail
   ctx.fillStyle = gold;
   ctx.beginPath();
@@ -1994,8 +2325,19 @@ function drawPlayer(
     ctx.fillRect(-1.5, -6, 3, 5);
     ctx.restore();
   }
+  }
   ctx.restore();
 
+  if (PIXEL_RIDER) {
+    const pose: PixelPose = player.sliding
+      ? "slide"
+      : airborne
+        ? player.velocityY < 0 ? "tuck" : "air"
+        : Math.floor(state.elapsed * 3) % 2 === 0 ? "ride" : "ride2";
+    // Shoe outline sits on the deck outline; in the air the rider follows half
+    // of the board's tilt so the feet stay on it
+    drawPixelRider(ctx, pose, lean * 0.1 + (airborne ? boardTilt * 0.6 : 0), boardY - PIXEL_SCALE, keychronLogo);
+  } else {
   // ---- Rider (chibi) ----
   const blink = state.elapsed % 3.4 < 0.13;
   const HEAD_RADIUS = 28; // same size standing and sliding
@@ -2246,6 +2588,8 @@ function drawPlayer(
     ctx.fill();
     drawFace(76, H - 104, HEAD_RADIUS, airborne && player.velocityY < 0);
     ctx.restore();
+  }
+
   }
 
   // ---- Board cat ----
